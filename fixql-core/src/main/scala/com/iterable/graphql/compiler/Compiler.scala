@@ -56,7 +56,7 @@ object Compiler {
 
   /** Applies the provided function recursively over the tree
     */
-  def annotatedFold[A, B](f: Field.Annotated[A] => Field[B] => B): Field.Annotated[A] => B = { attr =>
+  private def annotatedFold[A, B](f: Field.Annotated[A] => Field[B] => B): Field.Annotated[A] => B = { attr =>
     def helper(node: Field.Annotated[A]): B = {
       // TODO: reintroduce tail method
       val sub = Attr.un[Field, A](node)._2.map(helper) // recurse
