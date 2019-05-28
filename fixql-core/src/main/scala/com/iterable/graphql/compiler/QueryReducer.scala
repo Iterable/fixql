@@ -65,7 +65,7 @@ case class QueryReducer[+A](reducer: Field[Resolver[JsValue]] => Resolver[A]) {
     * When this field is many-to-one from its parents, then this field's values just have
     * the type Seq[T] and can be directly passed into subfield resolvers and merged.
     */
-  def mergeResolveSubfields(implicit ec: ExecutionContext, jsobjs: A <:< JsObject) = {
+  def mergeResolveSubfields(implicit ec: ExecutionContext, jsobjs: A <:< JsObject): QueryReducer[JsObject] = {
     flatMap { field => resolved =>
       for {
         _ <- DBIO.successful(())
