@@ -38,7 +38,9 @@ object Compiler {
 
     val mappingsFn = toMappingFunction(mappings)
 
-    val rootResolver = annotatedFold[FieldTypeInfo, Resolver[JsValue]](mappingsFn)(Attr.apply(FieldTypeInfo(None, "") -> annotated.fieldTreeRoot))
+    val annotatedRoot: Field.Annotated[FieldTypeInfo] = Attr(FieldTypeInfo(None, "") -> annotated.fieldTreeRoot)
+    val rootResolver = annotatedFold[FieldTypeInfo, Resolver[JsValue]](mappingsFn)(annotatedRoot)
+    
     // The root resolvers are applied with a singleton list containing an empty Json object
     // as the set of parents
     val containersAtRoot = Seq(Json.obj())
