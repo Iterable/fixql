@@ -69,7 +69,7 @@ object FromGraphQLJava {
         .executionStrategy(extractExecutionStrategy)
         .build()
         .execute(ExecutionInput.newExecutionInput(query)
-            .variables(toJavaValues(variables).asInstanceOf[Map[String, AnyRef]].asJava)
+          .variables(toJavaValues(variables).asInstanceOf[Map[String, AnyRef]].asJava)
           .build())
         .getData[java.util.LinkedHashMap[String, Any]]
         .get(null) // the map will have a value with key = null
@@ -167,58 +167,7 @@ object FromGraphQLJava {
         GraphQLTypeUtil.unwrapAll(fieldType).getName
       }
     }
-
   }
-
-  def main(args: Array[String]): Unit = {
-    val graphQLSchema = parseSchema(starWarsSchema)
-    val er = FromGraphQLJava.parseAndValidateQuery(graphQLSchema, """{ h1: human(id: "1000") { name } h2: human(id: "1001") { name } }""", Json.obj())
-    println(er)
-    ()
-  }
-
-  lazy val starWarsSchema =
-    """
-      |schema {
-      |        query: QueryType
-      |    }
-      |
-      |    type QueryType {
-      |        hero(episode: Episode): Character
-      |        human(id : String) : Human
-      |        droid(id: ID!): Droid
-      |    }
-      |
-      |
-      |    enum Episode {
-      |        NEWHOPE
-      |        EMPIRE
-      |        JEDI
-      |    }
-      |
-      |    interface Character {
-      |        id: ID!
-      |        name: String!
-      |        friends: [Character]
-      |        appearsIn: [Episode]!
-      |    }
-      |
-      |    type Human implements Character {
-      |        id: ID!
-      |        name: String!
-      |        friends: [Character]
-      |        appearsIn: [Episode]!
-      |        homePlanet: String
-      |    }
-      |
-      |    type Droid implements Character {
-      |        id: ID!
-      |        name: String!
-      |        friends: [Character]
-      |        appearsIn: [Episode]!
-      |        primaryFunction: String
-      |    }
-    """.stripMargin
 }
 
 private[graphql] class ContextExtractingExecutionStrategy extends ExecutionStrategy {
