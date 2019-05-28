@@ -17,8 +17,14 @@ inThisBuild(List(
   )
 ))
 
-lazy val root = (project in file("."))
-  .settings(
-    name := "fixql",
-    libraryDependencies += scalaTest % Test
+lazy val root = Project("fixql", file("."))
+  .settings(name := "fixql")
+  .aggregate(
+    core,
   )
+
+lazy val core = Project("fixql-core", file("fixql-core"))
+  .settings(name := "fixql-core")
+  .settings(libraryDependencies ++= Seq(
+    scalaTest % Test,
+  ))
