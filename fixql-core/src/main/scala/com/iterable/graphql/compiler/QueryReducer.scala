@@ -15,7 +15,7 @@ object QueryReducer {
     jsObjects { _ =>
       dbio
     } // This is an "illegal" state since top-level must be a Seq with one element
-      .mergeMapSubfields
+      .mergeResolveSubfields
       .toTopLevelArray
   }
 
@@ -65,7 +65,7 @@ case class QueryReducer[+A](reducer: Field[Resolver[JsValue]] => Resolver[A]) {
     * When this field is many-to-one from its parents, then this field's values just have
     * the type Seq[T] and can be directly passed into subfield resolvers and merged.
     */
-  def mergeMapSubfields(implicit ec: ExecutionContext, jsobjs: A <:< JsObject) = {
+  def mergeResolveSubfields(implicit ec: ExecutionContext, jsobjs: A <:< JsObject) = {
     flatMap { field => resolved =>
       for {
         _ <- DBIO.successful(())
