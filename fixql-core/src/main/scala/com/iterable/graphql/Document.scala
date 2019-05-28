@@ -38,7 +38,6 @@ case class Field[A](
   def map[B](f: A => B): Field[B] = {
     Field(name, arguments, subfields.map(f))
   }
-
 }
 
 object Field {

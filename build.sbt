@@ -31,7 +31,7 @@ lazy val core = Project("fixql-core", file("fixql-core"))
     "com.graphql-java" % "graphql-java" % "12.0",
     "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0",
 
-    "io.circe" %%	"circe-core" % "0.9.3",
+    "io.circe" %% "circe-core" % "0.9.3",
     "io.circe" %% "circe-parser" % "0.9.3",
     "io.circe" %% "circe-optics" % "0.9.3",
 

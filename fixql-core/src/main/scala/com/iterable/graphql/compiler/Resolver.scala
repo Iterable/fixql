@@ -14,7 +14,9 @@ trait Resolver[+A] {
     * Since batching is more general and more performant, we use a batched
     * signature below.
     *
-    * @return function from enclosing parent entity data to the data for this field */
+    * @return function from containing object data to the data for this field returned as a sequence
+    *         parallel with the input sequence
+    */
   def resolveBatch: Seq[JsObject] => DBIO[Seq[A]]
 }
 
