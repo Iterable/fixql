@@ -5,7 +5,7 @@ import io.circe.Json
 import org.scalatest.{FlatSpec, Matchers}
 import play.api.libs.json.{Json => PlayJson}
 
-class FromGraphQLJavaSpec extends FlatSpec with Matchers {
+class FromGraphQLJavaSpec extends FlatSpec with Matchers with StarWarsSchema {
 
   "FromGraphQLJava" should "parse documents" in {
     val graphQLSchema = parseSchema(starWarsSchema)
@@ -19,47 +19,4 @@ class FromGraphQLJavaSpec extends FlatSpec with Matchers {
         ),
       )
   }
-
-  val starWarsSchema =
-    """
-      |    schema {
-      |        query: QueryType
-      |    }
-      |
-      |    type QueryType {
-      |        hero(episode: Episode): Character
-      |        human(id : String) : Human
-      |        droid(id: ID!): Droid
-      |    }
-      |
-      |
-      |    enum Episode {
-      |        NEWHOPE
-      |        EMPIRE
-      |        JEDI
-      |    }
-      |
-      |    interface Character {
-      |        id: ID!
-      |        name: String!
-      |        friends: [Character]
-      |        appearsIn: [Episode]!
-      |    }
-      |
-      |    type Human implements Character {
-      |        id: ID!
-      |        name: String!
-      |        friends: [Character]
-      |        appearsIn: [Episode]!
-      |        homePlanet: String
-      |    }
-      |
-      |    type Droid implements Character {
-      |        id: ID!
-      |        name: String!
-      |        friends: [Character]
-      |        appearsIn: [Episode]!
-      |        primaryFunction: String
-      |    }
-    """.stripMargin
 }

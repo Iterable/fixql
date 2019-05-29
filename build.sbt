@@ -36,5 +36,7 @@ lazy val core = Project("fixql-core", file("fixql-core"))
     "io.circe" %% "circe-optics" % "0.9.3",
 
     "com.typesafe.slick" %% "slick" % "3.2.3",
-    "com.typesafe.play" %% "play-json" % "2.6.9",
+    "com.typesafe.play" %% "play-json" % "2.7.1",
+
+    "com.h2database" % "h2" % "1.4.187" % Test,
   ))
