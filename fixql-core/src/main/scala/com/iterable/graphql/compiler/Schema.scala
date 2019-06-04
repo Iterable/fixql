@@ -18,7 +18,7 @@ trait Schema {
   * @param types map from typeName -> fieldName -> typeName
   * @param topLevelFields map from fieldName -> typeName for all top-level fields
   */
-case class MapSchema(types: Map[String, Map[String, String]], topLevelFields: Map[String, String]) {
+case class MapSchema(types: Map[String, Map[String, String]], topLevelFields: Map[String, String]) extends Schema {
   self =>
 
   def getTypeNameOfField(parentTypeName: String, fieldName: String): String = {
@@ -31,9 +31,7 @@ case class MapSchema(types: Map[String, Map[String, String]], topLevelFields: Ma
       .getOrElse(topLevelFields(fieldName))
   }
 
-  def toSchemaFunction: Schema = new Schema {
-    override def getUnwrappedTypeNameOf(parentTypeName: Option[String], fieldName: String) = {
-      self.getTypeNameOf(parentTypeName, fieldName)
-    }
+  override def getUnwrappedTypeNameOf(parentTypeName: Option[String], fieldName: String) = {
+    self.getTypeNameOf(parentTypeName, fieldName)
   }
 }
