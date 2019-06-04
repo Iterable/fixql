@@ -27,4 +27,16 @@ lazy val core = Project("fixql-core", file("fixql-core"))
   .settings(name := "fixql-core")
   .settings(libraryDependencies ++= Seq(
     scalaTest % Test,
+    "io.higherkindness" %% "droste-core" % "0.6.0",
+    "com.graphql-java" % "graphql-java" % "12.0",
+    "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0",
+
+    "io.circe" %% "circe-core" % "0.9.3",
+    "io.circe" %% "circe-parser" % "0.9.3",
+    "io.circe" %% "circe-optics" % "0.9.3",
+
+    "com.typesafe.slick" %% "slick" % "3.2.3",
+    "com.typesafe.play" %% "play-json" % "2.7.1",
+
+    "com.h2database" % "h2" % "1.4.187" % Test,
   ))
