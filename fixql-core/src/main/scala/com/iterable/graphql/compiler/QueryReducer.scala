@@ -55,9 +55,9 @@ case class QueryReducer[+A](reducer: Field[Resolver[JsValue]] => Resolver[A]) {
     * since Resolvers should always produce an output Seq that is parallel (and with the same size)
     * as the input Seq.
     */
-  def toTopLevelArray(implicit ec: ExecutionContext, value: Writes[A]) = {
+  def toTopLevelArray(implicit ec: ExecutionContext, writes: Writes[A]): QueryReducer[JsArray] = {
     map { objs =>
-      Seq(Json.arr(objs.map(x => x: Json.JsValueWrapper): _*))
+      Seq(JsArray(objs.map(writes.writes)))
     }
   }
 

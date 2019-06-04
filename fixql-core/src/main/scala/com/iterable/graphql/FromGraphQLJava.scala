@@ -29,13 +29,7 @@ import graphql.schema.idl.SchemaParser
 import io.circe.Json
 import io.circe.JsonNumber
 import io.circe.JsonObject
-import play.api.libs.json.{Json => PlayJson}
-import play.api.libs.json.JsArray
-import play.api.libs.json.JsBoolean
-import play.api.libs.json.JsNull
-import play.api.libs.json.JsNumber
-import play.api.libs.json.JsString
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue}
 
 import scala.concurrent.Future
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -109,9 +103,7 @@ object FromGraphQLJava {
   private def mkField(fieldName: String, arguments: java.util.Map[String, AnyRef], fss: DataFetchingFieldSelectionSet): Field.Fixed = {
     // getFields contains flattened fields from all children, but we only want the immediate children
     val childFields = fss.getFields.asScala.filterNot(_.getQualifiedName.contains("/"))
-    val args = PlayJson.obj(arguments.asScala.map { case (key, value) =>
-      key -> (fromJavaValue(value): play.api.libs.json.Json.JsValueWrapper)
-    }.toSeq: _*)
+    val args = JsObject(arguments.asScala.mapValues(fromJavaValue))
     Field[Field.Fixed](
       fieldName,
       args,
@@ -126,11 +118,13 @@ object FromGraphQLJava {
     value match {
       case x if x == null => JsNull
       case f: Float => JsNumber(BigDecimal.decimal(f))
+      case d: Float => JsNumber(BigDecimal.decimal(d))
       case s: String => JsString(s)
       case n: Int => JsNumber(n)
       case n: Long => JsNumber(n)
       case f: Boolean => JsBoolean(f)
       case rg: Array[_] => JsArray(rg.map(fromJavaValue))
+      case v => throw new IllegalArgumentException(s"Java value $v has unexpected type ${v.getClass}")
     }
   }
 
