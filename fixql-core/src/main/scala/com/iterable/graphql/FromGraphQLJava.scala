@@ -75,11 +75,6 @@ object FromGraphQLJava {
           val fieldDef = Introspection.getFieldDef(graphQLSchema, graphQLSchema.getQueryType, mergedField.getName)
           val unwrappedType = GraphQLTypeUtil.unwrapAll(fieldDef.getType)
           // See ValueFetcher.fetchValue() or other callers of DataFetchingFieldSelectionSetImpl.newCollector()
-          //val codeRegistry: GraphQLCodeRegistry = executionContext.getGraphQLSchema.getCodeRegistry
-          //val parentType: GraphQLFieldsContainer = getFieldsContainer(executionInfo)
-          //val argumentValues: util.Map[String, AnyRef] = valuesResolver.getArgumentValues(codeRegistry, fieldDef.getArguments, field.getArguments, executionContext.getVariables)
-          //val fieldDef: GraphQLFieldDefinition = executionInfo.getFieldDefinition
-          //val fieldType: GraphQLOutputType = fieldDef.getType
           val argumentValues = valuesResolver.getArgumentValues(fieldDef.getArguments, mergedField.getArguments, context.getVariables)
           val selectionSet = DataFetchingFieldSelectionSetImpl.newCollector(context, unwrappedType, mergedField)
           mkField(mergedField.getName, argumentValues, selectionSet)
