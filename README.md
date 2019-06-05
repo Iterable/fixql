@@ -24,11 +24,8 @@ trait Resolver[+A] {
 }
 ```
 
-As the GraphQL tutorial says, "You can think of each field in a GraphQL query as a function or method of the previous type which returns the next type." (https://graphql.org/learn/execution/) Here the `resolveBatch` method depends on a `Seq[JsObject]` which represents the data for the batch of objects that each contain the field being fetched. The resolver then fetches the data for the field directly out of the object, or by performing an additional database query.
+As the GraphQL tutorial says, "You can think of each field in a GraphQL query as a function or method of the previous type which returns the next type." (https://graphql.org/learn/execution/) A non-batched `resolve` method would have signature `JsObject => DBIO[JsValue]` where the `JsObject` represents the data for the object that contains the field being fetched. Since batching is more general and more performant, we use a batched signature. Thus `resolveBatch` method depends on a `Seq[JsObject]` -- the data for the batch of objects that each contain the field being fetched. The resolver then fetches the data for the field directly out of the objects, or by performing an additional database query.
 
-A non-batched `resolve` method would have signature `JsObject => DBIO[JsValue]`.
-Since batching is more general and more performant, we use a batched
-signature.
 
 ## Query Execution AST
 
