@@ -1,18 +1,14 @@
 # FixQL
-A Scala GraphQL implementation based on fixpoint data types.
-
 [![Build Status](https://travis-ci.org/Iterable/fixql.svg?branch=master)](https://travis-ci.org/Iterable/fixql)
 
-This project aims to provide a GraphQL implementation that is small, easy-to-understand, and modular.
-
-Our implementation combines the following:
+A Scala GraphQL implementation based on fixpoint data types. This project aims to provide a GraphQL implementation that is small, easy-to-understand, and modular. Our implementation combines the following:
 - [GraphQL-Java][1] to do query parsing and validation. Parsing is modified to yield our own AST for execution.
 - Fixpoint data types from the [droste][2] library. Droste descends from the Matryoshka library.
 - Query execution implemented as a fold that "compiles" the query AST into a Slick DBIO (for now). This is influenced by Greg Pfeil's talk on [compiling with recursion schemes][3].
 
 This work is also inspired by the [Sangria][4] GraphQL Scala library.
 
-This implementation is under active development and is presently incomplete.
+This project is under active development and is presently incomplete.
 
 ## Schemas and Resolvers
 
