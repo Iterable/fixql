@@ -37,7 +37,7 @@ To associate resolvers with schemas, FixQL's query compiler takes a function tha
   Field.Annotated[FieldTypeInfo] => Resolver[JsValue]
 ```
 
-where `Field.Annotated[FieldTypeInfo]` is a tree of fields with some additional annotations that indicate the field's containing object type. The resolver can depend on the resolvers for the field's sub-fields, which have been determined recursively. So we actually have:
+where `Field.Annotated[FieldTypeInfo]` is a field annotated with with some additional information that indicate the field's containing object type. The resolver can depend on the resolvers for the field's sub-fields, which have been determined recursively. So we actually have:
 
 ```
   Field.Annotated[FieldTypeInfo] => Field[Resolver[JsValue]] => Resolver[JsValue]
@@ -65,7 +65,23 @@ Example:
 
 where `ObjectField` is an extractor that matches the `name` field on the `Human` object type.
 
-TBD: Monads. Derivation. Type Safety. Builder DSL. Arguments. Fragments. Runtime polymorphism.
+## Compilation and Execution
+
+Putting this all together, invoking FixQL's query compiler looks like:
+
+```scala
+val dbio = Compiler.compile(schema, mappings, query)
+```
+
+This yields a `DBIO[JsObject]` that the compiler forms through the following transformation phases:
+- Parse the query into the execution AST (query field tree)
+- Annotate the field tree with some type information drawn from the schema, in particular, the containing object type for each field
+- Apply the mappings recursively to the AST: generate a Resolver for each node of the tree, from the bottom up. This step yields a `Field[Resolver[JsObject]]` i.e. a tree of Resolvers.
+- "Run" the resolvers from the top-down, passing the data from a parent node into the child node as the containing object data. This step yields one large `DBIO[JsObject]`.
+
+The caller may then actually run the resulting DBIO using a Slick Database instance.
+
+TBD: Monads. Optimization. Derivation. Type Safety. Builder DSL. Arguments. Fragments. Runtime polymorphism.
 
 [1]: https://www.graphql-java.com/
 [2]: https://github.com/higherkindness/droste
