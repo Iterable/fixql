@@ -2,31 +2,49 @@ package com.iterable.graphql
 
 import com.iterable.graphql.compiler.FieldTypeInfo.ObjectField
 import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
-import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType}
+import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLSchema}
 import play.api.libs.json.JsValue
 
 class MutableMappingsBuilder {
-  private var mappings: QueryMappings = { case _ if false => QueryReducer.null }
+  private var mappings: QueryMappings = { case _ if false => null }
 
   def add(m: QueryMappings): Unit = {
     mappings = mappings orElse m
+  }
+
+  def build: QueryMappings = mappings
+}
+
+case class WithinQueryType[T](f: GraphQLObjectType.Builder => MutableMappingsBuilder => T) {
+  def include(implicit builder: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder) = {
+    f(builder)(mappings)
   }
 }
 
 trait MutableBuilderDsl {
 
-  /*
-  def withinObject[T](f: GraphQLObjectType.Builder => MutableMappingsBuilder => T): GraphQLObjectType.Builder => MutableMappingsBuilder => T = {
-    builder => mappings =>
-      f(builder)(mappings)
+  /**
+    * do we really want to define schema and mappings simultaneously?
+    * what about when one has no dependency on user but the other does?
+    * neither should depend on user. instead the dependency on user should be pushed down to Kleisli
+    */
+  protected final def schemaAndMappings(f: GraphQLSchema.Builder => MutableMappingsBuilder => Unit) = {
+    val schema = GraphQLSchema.newSchema()
+    val mappings = new MutableMappingsBuilder
+    f(schema)(mappings)
+    (schema.build, mappings.build)
   }
 
-  def withObjectType(name: String)
-                    (f: GraphQLObjectType.Builder => Unit): GraphQLObjectType = {
-    val builder = GraphQLObjectType.newObject().name(name)
-    f(builder)
-    builder.build()
-  } */
+  protected final def queryType(objectType: GraphQLObjectType)(implicit schemaBuilder: GraphQLSchema.Builder) = {
+    schemaBuilder.query(objectType)
+  }
+
+  implicit class SchemaExtensions(schemaBuilder: GraphQLSchema.Builder) {
+    def apply(f: GraphQLSchema.Builder => Unit) = {
+      f(schemaBuilder)
+      schemaBuilder.build
+    }
+  }
 
   implicit class ObjectExtensions(objectBuilder: GraphQLObjectType.Builder) {
     /**
@@ -55,7 +73,8 @@ trait MutableBuilderDsl {
           (implicit builder: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder) = {
       builder.field(field)
       val ObjectName = builder.build.getName
-      mappings.add({ case ObjectField(ObjectName, field.getName) => reducer })
+      val FieldName = field.getName
+      mappings.add({ case ObjectField(ObjectName, FieldName) => reducer })
     }
   }
 }
