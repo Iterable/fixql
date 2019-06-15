@@ -5,6 +5,9 @@ import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
 import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLSchema}
 import play.api.libs.json.JsValue
 
+/**
+  * Mutable builder for a QueryMappings partial function
+  */
 class MutableMappingsBuilder {
   private var mappings: QueryMappings = { case _ if false => null }
 
@@ -15,13 +18,44 @@ class MutableMappingsBuilder {
   def build: QueryMappings = mappings
 }
 
-case class WithinQueryType[T](f: GraphQLObjectType.Builder => MutableMappingsBuilder => T) {
+/** Supports "modular" definition of schemas using builders. This lets you do:
+  *
+  * def myObjectMappings = WithinQueryType { implicit obj => implicit mappings =>
+  *   field("top_level_field") ...
+  *
+  *   objectType("myObject") { implicit obj =>
+  *     field("my_object_field")..
+  *   }
+  * }
+  *
+  * Note that equivalently you could also do:
+  *
+  * def myObjectMappings(implicit obj: GraphQLObject.Builder, mappings: MutableMappingsBuilder) = {
+  *   ...
+  * }
+  *
+  * @tparam T useful to return a value (e.g. an object type) from this module
+  */
+case class WithinQueryType[T](mutate: GraphQLObjectType.Builder => MutableMappingsBuilder => T) {
+
+  /** Includes our field and mapping definitions in the current context. Example:
+    *
+    * schemaAndMappings { implicit schema => implicit mappings =>
+    *   queryType("Query") { implicit obj =>
+    *     myObjectMappings.include
+    *   }
+    * }
+    */
   def include(implicit builder: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder) = {
-    f(builder)(mappings)
+    mutate(builder)(mappings)
   }
 }
 
-trait MutableBuilderDsl {
+/**
+  * A mutable builder DSL to define schema and mappings simultaneously.
+  * See [[BuilderSpec]] for example usage.
+  */
+trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
 
   /**
     * do we really want to define schema and mappings simultaneously?
@@ -35,8 +69,13 @@ trait MutableBuilderDsl {
     (schema.build, mappings.build)
   }
 
-  protected final def queryType(objectType: GraphQLObjectType)(implicit schemaBuilder: GraphQLSchema.Builder) = {
-    schemaBuilder.query(objectType)
+  protected final def queryType(name: String)(f: GraphQLObjectType.Builder => Unit)(implicit schemaBuilder: GraphQLSchema.Builder) = {
+    val obj = objectType(name)(f)
+    schemaBuilder.query(obj)
+  }
+
+  protected final def addMappings(mappings: QueryMappings)(implicit mappingsBuilder: MutableMappingsBuilder): Unit = {
+    mappingsBuilder.add(mappings)
   }
 
   implicit class SchemaExtensions(schemaBuilder: GraphQLSchema.Builder) {
@@ -47,21 +86,6 @@ trait MutableBuilderDsl {
   }
 
   implicit class ObjectExtensions(objectBuilder: GraphQLObjectType.Builder) {
-    /**
-      * Consider making this require implicit MappingsBuilder,
-      * f: ObjectTypeBuilder => MappingsBuilder => Unit
-      * and passing down the mappings builder.
-      *
-      * This accomplishes two things (1) this only works in the context of a mappings builder
-      * and (2) f accepts an explicit mappings builder... and (3) unifies the type of Build.apply and this method
-      * it makes the dependency explicit
-      *
-      * it allows this to operate in contexts outside of Build { ... }
-      * it doesn't imply that a MappingsBuilder might be newly instantiated here
-      *
-      * @param f
-      * @return
-      */
     def apply(f: GraphQLObjectType.Builder => Unit): GraphQLObjectType = {
       f(objectBuilder)
       objectBuilder.build()

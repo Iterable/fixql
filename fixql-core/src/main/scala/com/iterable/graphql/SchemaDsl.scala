@@ -3,7 +3,7 @@ package com.iterable.graphql
 import graphql.schema.GraphQLFieldDefinition.newFieldDefinition
 import graphql.schema.{GraphQLObjectType, GraphQLOutputType}
 
-trait SchemaHelper {
+trait SchemaDsl {
   protected final def field(name: String, typ: GraphQLOutputType) = {
     newFieldDefinition().name(name).`type`(typ).build()
   }

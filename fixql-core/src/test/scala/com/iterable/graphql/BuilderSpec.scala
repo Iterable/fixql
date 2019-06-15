@@ -6,20 +6,18 @@ import graphql.schema.GraphQLList.list
 import graphql.schema.{GraphQLObjectType, GraphQLSchema}
 import org.scalatest.FlatSpec
 
-class BuilderSpec extends FlatSpec with MutableBuilderDsl with SchemaHelper {
+class BuilderSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl with SchemaDsl {
 
   class Root {
     def schemaAndMappings2: (GraphQLSchema, QueryMappings) = {
       schemaAndMappings { implicit schema => implicit mappings =>
-        queryType {
-          objectType("Query") { implicit obj =>
-            field("humans", list(humanType)) ~> null
+        queryType("Query") { implicit obj =>
+          field("humans", list(humanType)) ~> null
 
-            lazy val humanType =
-              objectType("Human") { implicit obj =>
-                field("name", Scalars.GraphQLString) ~> null
-              }
-          }
+          lazy val humanType =
+            objectType("Human") { implicit obj =>
+              field("name", Scalars.GraphQLString) ~> null
+            }
         }
       }
     }
