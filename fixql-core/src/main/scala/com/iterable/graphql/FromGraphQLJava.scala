@@ -113,7 +113,7 @@ object FromGraphQLJava {
     value match {
       case x if x == null => JsNull
       case f: Float => JsNumber(BigDecimal.decimal(f))
-      case d: Float => JsNumber(BigDecimal.decimal(d))
+      case d: Double => JsNumber(BigDecimal.decimal(d))
       case s: String => JsString(s)
       case n: Int => JsNumber(n)
       case n: Long => JsNumber(n)
