@@ -56,10 +56,10 @@ case class WithBuilders[T](mutate: Builders => T) {
   * query type
   */
 case class Builders(
-                          schemaBuilder: GraphQLSchema.Builder = GraphQLSchema.newSchema(),
-                          mappingsBuilder: MutableMappingsBuilder = new MutableMappingsBuilder,
-                          queryTypeBuilder: GraphQLObjectType.Builder,
-                        )
+  schemaBuilder: GraphQLSchema.Builder = GraphQLSchema.newSchema(),
+  mappingsBuilder: MutableMappingsBuilder = new MutableMappingsBuilder,
+  queryTypeBuilder: GraphQLObjectType.Builder,
+)
 
 /**
   * A mutable builder DSL to define schema and mappings simultaneously.
@@ -79,8 +79,11 @@ trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
     (builders.schemaBuilder.build, builders.mappingsBuilder.build)
   }
 
-  implicit def mappingsFromBuilder(implicit builder: Builders): MutableMappingsBuilder = builder.mappingsBuilder
+  implicit def mappingsFromBuilders(implicit builder: Builders): MutableMappingsBuilder = builder.mappingsBuilder
 
+  /** The Query type uses an ordinary object builder. But since we can't have multiple implicit object builders in
+    * lexical scope, uses of the query type builder must be delimited.
+    */
   protected final def withQueryType(mutate: GraphQLObjectType.Builder => Unit)(implicit builder: Builders) = {
     mutate(builder.queryTypeBuilder)
   }
