@@ -7,7 +7,7 @@ import graphql.schema.GraphQLNonNull.nonNull
 import graphql.schema.idl.SchemaPrinter
 import graphql.schema.{GraphQLSchema, GraphQLType}
 import org.scalatest.{FlatSpec, Matchers}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import slick.dbio.DBIO
 import slick.jdbc.JdbcBackend
 
@@ -39,18 +39,12 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
 
     // the lazy val is for the forward reference immediately above
     lazy val humanType = objectType("Human") { implicit obj =>
-      field("id", nonNull(GraphQLID)) ~> QueryReducer.jsValues { parents =>
-        DBIO.successful(parents.map(_.apply("id")))
+      field("id", nonNull(GraphQLID)) ~> QueryReducer.mapped(_("id"))
+      field("name", nonNull(GraphQLString)) ~> QueryReducer.mapped(_("name"))
+      field("friends", list(droidType)) ~> QueryReducer.mapped {_ =>
+        JsArray(repo.getDroids(1000, 0).map(Json.toJson(_)))
       }
-      field("name", nonNull(GraphQLString)) ~> QueryReducer.jsValues { parents =>
-        DBIO.successful(parents.map(_.apply("name")))
-      }
-      field("friends", list(droidType)) ~> QueryReducer.jsObjects { parents =>
-        DBIO.successful(repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject]))
-      }
-      field("homePlanet", GraphQLString) ~> QueryReducer.jsValues { parents =>
-        DBIO.successful(parents.map(_.apply("homePlanet")))
-      }
+      field("homePlanet", GraphQLString) ~> QueryReducer.mapped(_("homePlanet"))
     }
     humanType
   }
@@ -63,18 +57,12 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
     }
 
     lazy val droidType = objectType("Droid") { implicit obj =>
-      field("id", nonNull(GraphQLID)) ~> QueryReducer.jsValues { parents =>
-        DBIO.successful(parents.map(_.apply("id")))
+      field("id", nonNull(GraphQLID)) ~> QueryReducer.mapped(_("id"))
+      field("name", nonNull(GraphQLString)) ~> QueryReducer.mapped(_("name"))
+      field("friends", list(humanType)) ~> QueryReducer.mapped { _ =>
+        JsArray(repo.getHumans(1000, 0).map(Json.toJson(_)))
       }
-      field("name", nonNull(GraphQLString)) ~> QueryReducer.jsValues { parents =>
-        DBIO.successful(parents.map(_.apply("name")))
-      }
-      field("friends", list(humanType)) ~> QueryReducer.jsObjects { parents =>
-        DBIO.successful(repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject]))
-      }
-      field("primaryFunction", GraphQLString) ~> QueryReducer.jsValues { parents =>
-        DBIO.successful(parents.map(_.apply("primaryFunction")))
-      }
+      field("primaryFunction", GraphQLString) ~> QueryReducer.mapped(_("primaryFunction"))
     }
     droidType
   }

@@ -39,11 +39,9 @@ trait ReducerHelpers {
     val TypeNameField = Introspection.TypeNameMetaFieldDef.getName
 
     {
-      case ObjectField(containingTypeName, TypeNameField) => QueryReducer.jsValues {
-        containers =>
-          // TODO: the real implementation has to handle runtime polymorphism
-          DBIO.successful(containers.map(_ => JsString(containingTypeName)))
-      }
+      case ObjectField(containingTypeName, TypeNameField) =>
+        // TODO: the real implementation has to handle runtime polymorphism
+        QueryReducer.mapped(_ => JsString(containingTypeName))
     }
   }
 
