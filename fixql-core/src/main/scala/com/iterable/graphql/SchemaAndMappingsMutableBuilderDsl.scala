@@ -20,8 +20,8 @@ class MutableMappingsBuilder {
 
 /** Supports breaking up schema definition into multiple def's. For example, this lets you do:
   *
-  * def myObjectMappings = WithinQueryType { implicit obj => implicit mappings =>
-  *   field("top_level_field") ...
+  * def myObjectMappings = WithBuilders { implicit builders =>
+  *   withQueryType { implicit obj => field("top_level_field") ... }
   *
   *   objectType("myObject") { implicit obj =>
   *     field("my_object_field")..
@@ -30,7 +30,7 @@ class MutableMappingsBuilder {
   *
   * (Note that equivalently you could also do:
   *
-  * def myObjectMappings(implicit obj: GraphQLObject.Builder, mappings: MutableMappingsBuilder) = {
+  * def myObjectMappings(implicit builders: Builders) = {
   *   ...
   * })
   *
@@ -69,11 +69,6 @@ case class Builders(
   */
 trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
 
-  /**
-    * do we really want to define schema and mappings simultaneously?
-    * what about when one has no dependency on user but the other does?
-    * neither should depend on user. instead the dependency on user should be pushed down to Kleisli
-    */
   protected final def schemaAndMappings(mutate: Builders => Unit) = {
     val builders = Builders(queryTypeBuilder = objectType("QueryType"))
     mutate(builders)
