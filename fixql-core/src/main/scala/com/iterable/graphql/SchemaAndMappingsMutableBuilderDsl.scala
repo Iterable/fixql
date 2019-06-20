@@ -1,6 +1,6 @@
 package com.iterable.graphql
 
-import com.iterable.graphql.compiler.FieldTypeInfo.ObjectField
+import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
 import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLSchema}
 import play.api.libs.json.JsValue
@@ -59,7 +59,9 @@ case class Builders(
   schemaBuilder: GraphQLSchema.Builder = GraphQLSchema.newSchema(),
   mappingsBuilder: MutableMappingsBuilder = new MutableMappingsBuilder,
   queryTypeBuilder: GraphQLObjectType.Builder,
-)
+) {
+  lazy val queryTypeName = queryTypeBuilder.build.getName
+}
 
 /**
   * A mutable builder DSL to define schema and mappings simultaneously.
@@ -108,11 +110,15 @@ trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
 
   implicit class FieldExtensions(field: GraphQLFieldDefinition) {
     def ~>(reducer: QueryReducer[JsValue])
-          (implicit builder: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder) = {
-      builder.field(field)
-      val ObjectName = builder.build.getName
+          (implicit builders: Builders, obj: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder) = {
+      obj.field(field)
+      val ObjectName = obj.build.getName
       val FieldName = field.getName
-      mappings.add({ case ObjectField(ObjectName, FieldName) => reducer })
+      if (ObjectName == builders.queryTypeName) {
+        mappings.add({ case TopLevelField(FieldName) => reducer })
+      } else {
+        mappings.add({ case ObjectField(ObjectName, FieldName) => reducer })
+      }
     }
   }
 }
