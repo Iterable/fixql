@@ -1,56 +1,63 @@
 package com.iterable.graphql.derivation
 
-import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLOutputType, GraphQLType}
+import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLOutputType}
 import graphql.Scalars._
 import shapeless.labelled.{FieldType, field}
 import shapeless.ops.record.ToMap
 import shapeless.{::, HList, HNil, LabelledGeneric, Poly1}
 
-object ToGraphQLType extends Poly1 {
-  implicit val caseInt = at[Int] { _ => GraphQLInt }
-  implicit val caseStr = at[String] { _ => GraphQLString }
-  implicit val caseBool = at[Boolean] { _ => GraphQLBoolean }
+/**
+  * Type class that gives the GraphQLType for a Scala type T
+  */
+trait IsGraphQLOutputType[T] {
+  def graphQLType: GraphQLOutputType
 }
 
-object ToGraphQLOutputType {
+private case class PrimitiveIsGraphQLOutputType[T](graphQLType: GraphQLOutputType)
+  extends IsGraphQLOutputType[T]
+
+object IsGraphQLOutputType {
+  implicit val intIsGraphQLType: IsGraphQLOutputType[Int] = PrimitiveIsGraphQLOutputType(GraphQLInt)
+  implicit val stringIsGraphQLType: IsGraphQLOutputType[String] = PrimitiveIsGraphQLOutputType(GraphQLString)
+  implicit val boolIsGraphQLType: IsGraphQLOutputType[Boolean] = PrimitiveIsGraphQLOutputType(GraphQLBoolean)
+
+  object ToGraphQLType extends Poly1 {
+    implicit def fromIsGraphQLType[T](implicit t: IsGraphQLOutputType[T]): Case.Aux[T, GraphQLOutputType] = {
+      at[T] { _ => t.graphQLType }
+    }
+  }
+
   class Derive[T](name: String) {
     def toGraphQLObjectType[L <: HList, O <: HList, MV <: HList]
     (implicit
      gen: LabelledGeneric.Aux[T, L],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
-     toMap: ToMap.Aux[MV, Symbol, Any]
+     toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
     ) = {
       deriveGraphQLObjectType(name)
     }
   }
 
   def deriveGraphQLObjectType[T, L <: HList, O <: HList, MV <: HList]
-  (name: String)
+  (typeName: String)
   (implicit
    gen: LabelledGeneric.Aux[T, L],
    mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
-   toMap: ToMap.Aux[MV, Symbol, Any]
+   toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
   ): GraphQLObjectType = {
     import scala.collection.JavaConverters.seqAsJavaListConverter
     val mv = mapValues.apply()
     val seq = toMap.apply(mv)
     val fieldDefs = seq.map { case (name, typ) =>
-        GraphQLFieldDefinition.newFieldDefinition()
+      GraphQLFieldDefinition.newFieldDefinition()
         .name(name.name)
-        .`type`(typ.asInstanceOf[GraphQLOutputType])
+        .`type`(typ)
         .build
     }
     GraphQLObjectType.newObject()
-      .name(name)
+      .name(typeName)
       .fields(fieldDefs.toSeq.asJava)
       .build
-  }
-
-  case class Test(foo: String, bar: Int)
-
-  def main(args: Array[String]): Unit = {
-    val typ = new Derive[Test]("Test").toGraphQLObjectType
-    println(typ)
   }
 }
 
@@ -61,7 +68,6 @@ object ToGraphQLOutputType {
 trait MapValuesNull[HF, L <: HList] extends Serializable { type Out <: HList; def apply(): Out }
 
 object MapValuesNull {
-
   type Aux[HF, L <: HList, Out0 <: HList] = MapValuesNull[HF, L] { type Out = Out0 }
 
   implicit def hnilMapValues[HF, L <: HNil]: Aux[HF, L, HNil] =
