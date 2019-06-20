@@ -24,9 +24,7 @@ class CompilerSpec extends AsyncFlatSpec with Matchers with StarWarsSchema with 
       case TopLevelField("droids") => QueryReducer.jsObjects { _ =>
         DBIO.successful(repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject]))
       }
-      case ObjectField("Human", "name") => QueryReducer.jsValues { parents =>
-        DBIO.successful(parents.map(_.apply("name")))
-      }
+      case ObjectField("Human", "name") => QueryReducer.mapped(_("name"))
     }: QueryMappings).orElse(rootMapping)
 
     import qq.droste.syntax.fix._

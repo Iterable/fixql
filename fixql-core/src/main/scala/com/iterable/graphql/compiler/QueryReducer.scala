@@ -11,6 +11,12 @@ import slick.dbio.DBIO
 import scala.concurrent.ExecutionContext
 
 object QueryReducer {
+  def mapped[T](f: JsObject => T): QueryReducer[T] = QueryReducer[T] { field: Field[Resolver[JsValue]] =>
+    ResolverFn(field.name) { parents =>
+      DBIO.successful(parents.map(f))
+    }
+  }
+
   def topLevelArrayWithSubfields(dbio: => DBIO[Seq[JsObject]])(implicit ec: ExecutionContext): QueryReducer[JsArray] = {
     jsObjects { _ =>
       dbio
