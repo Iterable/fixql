@@ -11,7 +11,7 @@ class IsGraphQLOutputTypeSpec extends FlatSpec with Matchers with SchemaDsl {
   case class Test(foo: String, bar: Int)
 
   "derivation" should "generate the expected object type" in {
-    val objectType = new IsGraphQLOutputType.Derive[Test]("Test").toGraphQLObjectType
+    val objectType = ToGraphQLType.derive[Test]("Test").toGraphQLObjectType
 
     val expected = GraphQLObjectType.newObject()
       .name("Test")

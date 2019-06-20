@@ -20,12 +20,14 @@ object IsGraphQLOutputType {
   implicit val intIsGraphQLType: IsGraphQLOutputType[Int] = PrimitiveIsGraphQLOutputType(GraphQLInt)
   implicit val stringIsGraphQLType: IsGraphQLOutputType[String] = PrimitiveIsGraphQLOutputType(GraphQLString)
   implicit val boolIsGraphQLType: IsGraphQLOutputType[Boolean] = PrimitiveIsGraphQLOutputType(GraphQLBoolean)
+}
 
-  object ToGraphQLType extends Poly1 {
-    implicit def fromIsGraphQLType[T](implicit t: IsGraphQLOutputType[T]): Case.Aux[T, GraphQLOutputType] = {
-      at[T] { _ => t.graphQLType }
-    }
+object ToGraphQLType extends Poly1 {
+  implicit def fromIsGraphQLType[T](implicit t: IsGraphQLOutputType[T]): Case.Aux[T, GraphQLOutputType] = {
+    at[T] { _ => t.graphQLType }
   }
+
+  def derive[T](name: String) = new Derive[T](name)
 
   class Derive[T](name: String) {
     def toGraphQLObjectType[L <: HList, O <: HList, MV <: HList]
