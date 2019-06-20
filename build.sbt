@@ -20,6 +20,7 @@ lazy val root = Project("fixql", file("."))
   .settings(name := "fixql")
   .aggregate(
     core,
+    derivation,
   )
 
 lazy val core = Project("fixql-core", file("fixql-core"))
