@@ -59,6 +59,13 @@ object IsGraphQLOutputType {
       .fields(fieldDefs.toSeq.asJava)
       .build
   }
+
+  case class Test(foo: String, bar: Int)
+
+  def main(args: Array[String]): Unit = {
+    val typ = new Derive[Test]("Test").toGraphQLObjectType
+    println(typ)
+  }
 }
 
 /**

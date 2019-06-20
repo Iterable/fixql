@@ -46,6 +46,7 @@ lazy val derivation = Project("fixql-derivation", file("fixql-derivation"))
   .settings(
     libraryDependencies ++= Seq(
       "com.chuusai" %% "shapeless" % "2.3.3",
+      scalaTest % Test,
     )
   )
   .dependsOn(core)
