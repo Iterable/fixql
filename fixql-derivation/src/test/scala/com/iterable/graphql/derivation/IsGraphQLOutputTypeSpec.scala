@@ -12,12 +12,12 @@ class IsGraphQLOutputTypeSpec extends FlatSpec with Matchers
   case class Test(foo: String, bar: Int)
 
   "object type derivation" should "generate the expected object type" in {
-    val objectType = ToGraphQLType.derive[Test]("Test").toGraphQLObjectType
+    val objectType = DeriveGraphQLType.derive[Test]("Test").toGraphQLObjectType
 
     val expected = GraphQLObjectType.newObject()
       .name("Test")
-      .field(field("foo", GraphQLString))
-      .field(field("bar", GraphQLInt))
+      .field(field("foo", nonNull(GraphQLString)))
+      .field(field("bar", nonNull(GraphQLInt)))
       .build
 
     val printer = new SchemaPrinter(SchemaPrinter.Options.defaultOptions())
@@ -34,7 +34,7 @@ class IsGraphQLOutputTypeSpec extends FlatSpec with Matchers
         }
 
         lazy val humanType =
-          ToGraphQLType.derive[Human]("Human").toGraphQLObjectType
+          DeriveGraphQLType.derive[Human]("Human").toGraphQLObjectType
         addMappings(DeriveMappings.derive[Human]("Human").mappings)
       }
   }
