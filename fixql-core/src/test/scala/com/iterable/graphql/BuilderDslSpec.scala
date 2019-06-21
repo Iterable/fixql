@@ -74,7 +74,7 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
     val (schema, mappings) = buildSchemaAndMappings
     val knownSchema = FromGraphQLJava.parseSchema(simplifiedStarWarsSchema)
 
-    val printer = new SchemaPrinter(SchemaPrinter.Options.defaultOptions())
+    val printer = new SchemaPrinter()
     //println(printer.print(schema))
     //println(printer.print(knownSchema))
     printer.print(schema) shouldEqual printer.print(knownSchema)

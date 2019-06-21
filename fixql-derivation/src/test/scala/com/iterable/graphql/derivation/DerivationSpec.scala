@@ -12,7 +12,7 @@ import shapeless.HNil
 import slick.dbio.DBIO
 import slick.jdbc.JdbcBackend
 
-class IsGraphQLOutputTypeSpec extends AsyncFlatSpec with Matchers
+class DerivationSpec extends AsyncFlatSpec with Matchers
   with SchemaAndMappingsMutableBuilderDsl with ReducerHelpers with DerivationBuilderDsl {
 
   case class Test(foo: String, bar: Int)
@@ -26,7 +26,7 @@ class IsGraphQLOutputTypeSpec extends AsyncFlatSpec with Matchers
       .field(field("bar", nonNull(GraphQLInt)))
       .build
 
-    val printer = new SchemaPrinter(SchemaPrinter.Options.defaultOptions())
+    val printer = new SchemaPrinter()
     printer.print(objectType) shouldEqual printer.print(expected)
   }
 
@@ -92,6 +92,9 @@ class IsGraphQLOutputTypeSpec extends AsyncFlatSpec with Matchers
         addMappings(standardMappings)
       }
 
+    val printer = new SchemaPrinter()
+    printer.print(schema) shouldEqual printer.print(knownSchema)
+
     val queryStr = "{ humans { id name homePlanet } }"
     val query = FromGraphQLJava.parseAndValidateQuery(schema, queryStr, Json.obj())
     val dbio = Compiler.compile(FromGraphQLJava.toSchemaFunction(schema), query.get, mappings)
@@ -106,4 +109,21 @@ class IsGraphQLOutputTypeSpec extends AsyncFlatSpec with Matchers
       arr.value.find(_("name") == JsString("Han Solo")).get.apply("homePlanet") shouldEqual JsNull
     }
   }
+
+  private val knownSchema = FromGraphQLJava.parseSchema(
+    """
+      |schema {
+      |  query: QueryType
+      |}
+      |
+      |type QueryType {
+      |  humans: [Human]
+      |}
+      |
+      |type Human {
+      |  id: ID
+      |  name: String
+      |  homePlanet: String
+      |}
+    """.stripMargin)
 }
