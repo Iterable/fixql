@@ -5,7 +5,7 @@ import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
 import play.api.libs.json.{JsNull, JsValue}
 import shapeless.ops.hlist.{SelectAll, ToTraversable}
 import shapeless.ops.record.Keys
-import shapeless.{HList, LabelledGeneric}
+import shapeless.{HList, LabelledGeneric, SingletonProductArgs}
 
 /**
   * Generates trivial mappings for the fields of a case class.
@@ -16,7 +16,9 @@ import shapeless.{HList, LabelledGeneric}
   * For the non-trivial cases one should simply define the mappings explicitly.
   */
 object DeriveMappings {
-  class Derive[T](TypeName: String) {
+  def apply[T](typeName: String) = new Derive[T](typeName)
+
+  class Derive[T](TypeName: String) extends SingletonProductArgs {
     def allFields[L <: HList, K <: HList]
     (implicit gen: LabelledGeneric.Aux[T, L],
      keys: Keys.Aux[L, K],
@@ -25,10 +27,10 @@ object DeriveMappings {
     }
 
     /** Only include the selected fields in the generated mappings. If you want to
-      * customize anything about a field mapping, you should simply define the
-      * field's mapping manually rather than using automatic derivation.
+      * customize anything about a field mapping, you should exclude the field
+      * from automatic derivation and simply define the field's mapping explicitly.
       */
-    def fields[L <: HList, K <: HList, S <: HList]
+    def fieldsProduct[L <: HList, K <: HList, S <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      keys: Keys.Aux[L, K],
@@ -38,8 +40,6 @@ object DeriveMappings {
       fieldMappings(TypeName, fieldNames)
     }
   }
-
-  def apply[T](typeName: String) = new Derive[T](typeName)
 
   def deriveMappings[T, L <: HList, K <: HList](TypeName: String)
   (implicit gen: LabelledGeneric.Aux[T, L],

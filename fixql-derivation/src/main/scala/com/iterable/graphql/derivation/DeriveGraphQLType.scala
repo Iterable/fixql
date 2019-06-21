@@ -1,7 +1,7 @@
 package com.iterable.graphql.derivation
 
 import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLOutputType}
-import shapeless.{::, HList, HNil, LabelledGeneric, Poly1}
+import shapeless.{::, HList, HNil, LabelledGeneric, Poly1, SingletonProductArgs}
 import shapeless.labelled.{FieldType, field}
 import shapeless.ops.hlist.ZipWithKeys
 import shapeless.ops.record.{SelectAll, ToMap}
@@ -25,7 +25,7 @@ object ToGraphQLType extends Poly1 {
 object DeriveGraphQLType {
   def apply[T](name: String) = new Derive[T](name)
 
-  class Derive[T](name: String) {
+  class Derive[T](name: String) extends SingletonProductArgs {
     def allFields[L <: HList, O <: HList, MV <: HList]
     (implicit gen: LabelledGeneric.Aux[T, L],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
@@ -38,7 +38,7 @@ object DeriveGraphQLType {
       * customize anything about a field's definition, you should simply define the
       * field manually rather than using automatic derivation.
       */
-    def fields[L <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
+    def fieldsProduct[L <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],

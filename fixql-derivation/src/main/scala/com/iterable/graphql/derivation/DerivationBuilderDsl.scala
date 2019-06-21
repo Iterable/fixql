@@ -45,7 +45,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],
      toMap: ToMap.Aux[MV, _, GraphQLOutputType]
     )  = {
-      val derived = DeriveGraphQLType[T](name).fields(selections)
+      val derived = DeriveGraphQLType[T](name).fieldsProduct(selections)
       obj.fields(derived.getFieldDefinitions)
     }
 
@@ -56,7 +56,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
      keys: Keys.Aux[L, K],
      select: hlist.SelectAll[K, S],
      set: ToTraversable.Aux[S, Set, Symbol])= {
-      val derived = DeriveMappings[T](name).fields(selections)
+      val derived = DeriveMappings[T](name).fieldsProduct(selections)
       self.addMappings(derived)
     }
   }
