@@ -20,6 +20,7 @@ object IsGraphQLOutputType {
   implicit val intIsGraphQLType: IsGraphQLOutputType[Int] = PrimitiveIsGraphQLOutputType(GraphQLInt)
   implicit val stringIsGraphQLType: IsGraphQLOutputType[String] = PrimitiveIsGraphQLOutputType(GraphQLString)
   implicit val boolIsGraphQLType: IsGraphQLOutputType[Boolean] = PrimitiveIsGraphQLOutputType(GraphQLBoolean)
+  implicit val longIsGraphQLType: IsGraphQLOutputType[Long] = PrimitiveIsGraphQLOutputType(GraphQLLong)
 }
 
 object ToGraphQLType extends Poly1 {
