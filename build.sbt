@@ -49,4 +49,4 @@ lazy val derivation = Project("fixql-derivation", file("fixql-derivation"))
       scalaTest % Test,
     )
   )
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")

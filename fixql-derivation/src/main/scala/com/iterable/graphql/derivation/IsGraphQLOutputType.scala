@@ -4,7 +4,8 @@ import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLOutputT
 import graphql.schema.GraphQLNonNull.nonNull
 import graphql.Scalars._
 import shapeless.labelled.{FieldType, field}
-import shapeless.ops.record.ToMap
+import shapeless.ops.hlist.ZipWithKeys
+import shapeless.ops.record.{SelectAll, ToMap}
 import shapeless.{::, <:!<, HList, HNil, LabelledGeneric, Poly1}
 
 /**
@@ -50,13 +51,31 @@ object DeriveGraphQLType extends Poly1 {
   def derive[T](name: String) = new Derive[T](name)
 
   class Derive[T](name: String) {
-    def toGraphQLObjectType[L <: HList, O <: HList, MV <: HList]
+    def allFields[L <: HList, O <: HList, MV <: HList]
     (implicit
      gen: LabelledGeneric.Aux[T, L],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
      toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
     ) = {
       deriveGraphQLObjectType(name)
+    }
+
+    /** Only include the selected fields in the generated object type. If you want to
+      * customize anything about a field's definition, you should simply define the
+      * field manually rather than using automatic derivation.
+      */
+    def selected[L <: HList, O <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
+    (selections: S)
+    (implicit
+     gen: LabelledGeneric.Aux[T, L],
+     select: SelectAll.Aux[L, S, V],
+     zipped: ZipWithKeys.Aux[S, V, L2],
+     mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],
+     toMap: ToMap.Aux[MV, _, GraphQLOutputType]
+    ) = {
+      val mv = mapValues.apply()
+      val map = toMap.apply(mv)
+      createObjectType(name, map.map { case (key, value) => key.asInstanceOf[Symbol] -> value})
     }
   }
 
@@ -67,17 +86,21 @@ object DeriveGraphQLType extends Poly1 {
    mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
    toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
   ): GraphQLObjectType = {
-    import scala.collection.JavaConverters.seqAsJavaListConverter
     val mv = mapValues.apply()
-    val seq = toMap.apply(mv)
-    val fieldDefs = seq.map { case (name, typ) =>
+    val map = toMap.apply(mv)
+    createObjectType(typeName, map)
+  }
+
+  private def createObjectType(name: String, map: Map[Symbol, GraphQLOutputType]) = {
+    import scala.collection.JavaConverters.seqAsJavaListConverter
+    val fieldDefs = map.map { case (name, typ) =>
       GraphQLFieldDefinition.newFieldDefinition()
         .name(name.name)
         .`type`(typ)
         .build
     }
     GraphQLObjectType.newObject()
-      .name(typeName)
+      .name(name)
       .fields(fieldDefs.toSeq.asJava)
       .build
   }
