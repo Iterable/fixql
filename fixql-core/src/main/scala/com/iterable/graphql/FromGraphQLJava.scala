@@ -59,7 +59,6 @@ object FromGraphQLJava {
   def parseAndValidateQuery(graphQLSchema: GraphQLSchema, query: String, variables: Json): Try[Query[Field.Fixed]] = {
     val extractExecutionStrategy = new ContextExtractingExecutionStrategy
     Try {
-
       val result = graphql.nextgen.GraphQL.newGraphQL(graphQLSchema)
         .executionStrategy(extractExecutionStrategy)
         .build()

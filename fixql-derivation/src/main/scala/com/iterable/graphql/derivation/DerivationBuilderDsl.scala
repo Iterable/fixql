@@ -18,8 +18,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
   class Derive[T](name: String)(implicit obj: GraphQLObjectType.Builder) {
     def addFieldsAndMappings[L <: HList, O <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList, K <: HList]
     (selections: S)
-    (implicit
-     gen: LabelledGeneric.Aux[T, L],
+    (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],
      zipped: ZipWithKeys.Aux[S, V, L2],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],
@@ -36,8 +35,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
 
     def addFields[L <: HList, O <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
     (selections: S)
-    (implicit
-     gen: LabelledGeneric.Aux[T, L],
+    (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],
      zipped: ZipWithKeys.Aux[S, V, L2],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],

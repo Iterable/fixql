@@ -6,6 +6,9 @@ import shapeless.labelled.{FieldType, field}
 import shapeless.ops.hlist.ZipWithKeys
 import shapeless.ops.record.{SelectAll, ToMap}
 
+/**
+  * Adapts the IsGraphQLOutputType type class to a Poly1 (polymorphic function value).
+  */
 object ToGraphQLType extends Poly1 {
   /** Note this could be better done with a Poly0 but using a Poly1 lets me
     * use MapValuesNull. What I really want is "FillValuesWith" - a combination of
@@ -16,13 +19,16 @@ object ToGraphQLType extends Poly1 {
   }
 }
 
+/**
+  * Provides automatic derivation of GraphQLObjectTypes from case classes.
+  * See [[DerivationSpec]] for example usage.
+  */
 object DeriveGraphQLType {
   def derive[T](name: String) = new Derive[T](name)
 
   class Derive[T](name: String) {
     def allFields[L <: HList, O <: HList, MV <: HList]
-    (implicit
-     gen: LabelledGeneric.Aux[T, L],
+    (implicit gen: LabelledGeneric.Aux[T, L],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
      toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
     ) = {
@@ -35,8 +41,7 @@ object DeriveGraphQLType {
       */
     def selected[L <: HList, O <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
     (selections: S)
-    (implicit
-     gen: LabelledGeneric.Aux[T, L],
+    (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],
      zipped: ZipWithKeys.Aux[S, V, L2],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],
@@ -50,8 +55,7 @@ object DeriveGraphQLType {
 
   def deriveGraphQLObjectType[T, L <: HList, O <: HList, MV <: HList]
   (typeName: String)
-  (implicit
-   gen: LabelledGeneric.Aux[T, L],
+  (implicit gen: LabelledGeneric.Aux[T, L],
    mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
    toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
   ): GraphQLObjectType = {
