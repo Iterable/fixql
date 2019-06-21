@@ -48,7 +48,7 @@ class DerivationSpec extends AsyncFlatSpec with Matchers
 
         import shapeless.syntax.singleton._
         lazy val humanType =
-          DeriveGraphQLType.derive[Human]("Human").selected('id.narrow :: 'name.narrow :: HNil)
+          DeriveGraphQLType[Human]("Human").fields('id.narrow :: 'name.narrow :: HNil)
         addMappings(DeriveMappings[Human]("Human").fields('id.narrow :: 'name.narrow :: HNil))
 
         addMappings(standardMappings)
