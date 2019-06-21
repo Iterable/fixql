@@ -40,6 +40,7 @@ class IsGraphQLOutputTypeSpec extends AsyncFlatSpec with Matchers
           field("humans", list(humanType)) ~> QueryReducer.jsObjects { _ =>
             DBIO.successful(repo.getHumans(1000, 0).map(PlayJson.toJson(_).as[JsObject]))
           }
+            .mergeResolveSubfields
             .toTopLevelArray
         }
 
@@ -51,7 +52,7 @@ class IsGraphQLOutputTypeSpec extends AsyncFlatSpec with Matchers
         addMappings(standardMappings)
       }
 
-    val queryStr = "{ humans { id } }"
+    val queryStr = "{ humans { id name } }"
     val query = FromGraphQLJava.parseAndValidateQuery(schema, queryStr, Json.obj())
     val dbio = Compiler.compile(FromGraphQLJava.toSchemaFunction(schema), query.get, mappings)
     slickDb.run(dbio).map { queryResults =>
