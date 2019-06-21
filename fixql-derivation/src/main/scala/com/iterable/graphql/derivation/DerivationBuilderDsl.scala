@@ -7,6 +7,10 @@ import shapeless.{HList, LabelledGeneric}
 import shapeless.ops.hlist.{ToTraversable, ZipWithKeys}
 import shapeless.ops.record.{Keys, SelectAll, ToMap}
 
+/**
+  * Adds derivation-based syntax to the builder DSL.
+  * See [[DerivationSpec]] for example usage.
+  */
 trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
   self =>
 
@@ -41,7 +45,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],
      toMap: ToMap.Aux[MV, _, GraphQLOutputType]
     )  = {
-      val derived = DeriveGraphQLType.derive[T](name).selected(selections)
+      val derived = DeriveGraphQLType[T](name).fields(selections)
       obj.fields(derived.getFieldDefinitions)
     }
 
@@ -52,7 +56,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
      keys: Keys.Aux[L, K],
      select: hlist.SelectAll[K, S],
      set: ToTraversable.Aux[S, Set, Symbol])= {
-      val derived = DeriveMappings.derive[T](name).selected(selections)
+      val derived = DeriveMappings[T](name).fields(selections)
       self.addMappings(derived)
     }
   }

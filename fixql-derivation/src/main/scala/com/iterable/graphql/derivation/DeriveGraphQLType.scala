@@ -21,10 +21,9 @@ object ToGraphQLType extends Poly1 {
 
 /**
   * Provides automatic derivation of GraphQLObjectTypes from case classes.
-  * See [[DerivationSpec]] for example usage.
   */
 object DeriveGraphQLType {
-  def derive[T](name: String) = new Derive[T](name)
+  def apply[T](name: String) = new Derive[T](name)
 
   class Derive[T](name: String) {
     def allFields[L <: HList, O <: HList, MV <: HList]
@@ -39,12 +38,13 @@ object DeriveGraphQLType {
       * customize anything about a field's definition, you should simply define the
       * field manually rather than using automatic derivation.
       */
-    def selected[L <: HList, O <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
+    def fields[L <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],
      zipped: ZipWithKeys.Aux[S, V, L2],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],
+    // The _ should be Symbol but doesn't type-check for some reason
      toMap: ToMap.Aux[MV, _, GraphQLOutputType]
     ) = {
       val mv = mapValues.apply()

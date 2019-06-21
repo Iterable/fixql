@@ -9,7 +9,6 @@ import shapeless.{HList, LabelledGeneric}
 
 /**
   * Generates trivial mappings for the fields of a case class.
-  * See [[DerivationSpec]] for example usage.
   *
   * The generated mappings are trivial in the sense that they simply extract the field's
   * value from the containing object using QueryReducer.mapped.
@@ -29,7 +28,7 @@ object DeriveMappings {
       * customize anything about a field mapping, you should simply define the
       * field's mapping manually rather than using automatic derivation.
       */
-    def selected[L <: HList, K <: HList, S <: HList]
+    def fields[L <: HList, K <: HList, S <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      keys: Keys.Aux[L, K],
@@ -40,7 +39,7 @@ object DeriveMappings {
     }
   }
 
-  def derive[T](typeName: String) = new Derive[T](typeName)
+  def apply[T](typeName: String) = new Derive[T](typeName)
 
   def deriveMappings[T, L <: HList, K <: HList](TypeName: String)
   (implicit gen: LabelledGeneric.Aux[T, L],

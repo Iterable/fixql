@@ -18,7 +18,7 @@ class DerivationSpec extends AsyncFlatSpec with Matchers
   case class Test(foo: String, bar: Int)
 
   "object type derivation" should "generate the expected object type" in {
-    val objectType = DeriveGraphQLType.derive[Test]("Test").allFields
+    val objectType = DeriveGraphQLType[Test]("Test").allFields
 
     val expected = GraphQLObjectType.newObject()
       .name("Test")
@@ -49,7 +49,7 @@ class DerivationSpec extends AsyncFlatSpec with Matchers
         import shapeless.syntax.singleton._
         lazy val humanType =
           DeriveGraphQLType.derive[Human]("Human").selected('id.narrow :: 'name.narrow :: HNil)
-        addMappings(DeriveMappings.derive[Human]("Human").selected('id.narrow :: 'name.narrow :: HNil))
+        addMappings(DeriveMappings[Human]("Human").fields('id.narrow :: 'name.narrow :: HNil))
 
         addMappings(standardMappings)
       }
