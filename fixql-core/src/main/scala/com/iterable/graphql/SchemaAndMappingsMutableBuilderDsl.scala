@@ -8,14 +8,14 @@ import play.api.libs.json.JsValue
 /**
   * Mutable builder for a QueryMappings partial function
   */
-class MutableMappingsBuilder {
-  private var mappings: QueryMappings = { case _ if false => null }
+class MutableMappingsBuilder[F[_]] {
+  private var mappings: QueryMappings[F] = { case _ if false => null }
 
-  def add(m: QueryMappings): Unit = {
+  def add(m: QueryMappings[F]): Unit = {
     mappings = mappings orElse m
   }
 
-  def build: QueryMappings = mappings
+  def build: QueryMappings[F] = mappings
 }
 
 /** Supports breaking up schema definition into multiple def's. For example, this lets you do:
@@ -36,7 +36,7 @@ class MutableMappingsBuilder {
   *
   * @tparam T useful to return a value (e.g. an object type) from this definition block
   */
-case class WithBuilders[T](mutate: Builders => T) {
+case class WithBuilders[F[_], T](mutate: Builders[F] => T) {
 
   /** Includes our field and mapping definitions in the current context. Example:
     *
@@ -46,7 +46,7 @@ case class WithBuilders[T](mutate: Builders => T) {
     *   }
     * }
     */
-  def include(implicit builder: Builders) = {
+  def include(implicit builder: Builders[F]) = {
     mutate(builder)
   }
 }
@@ -55,9 +55,9 @@ case class WithBuilders[T](mutate: Builders => T) {
   * Top-level builders - doesn't include object-type builders other than the builder for the
   * query type
   */
-case class Builders(
+case class Builders[F[_]](
   schemaBuilder: GraphQLSchema.Builder = GraphQLSchema.newSchema(),
-  mappingsBuilder: MutableMappingsBuilder = new MutableMappingsBuilder,
+  mappingsBuilder: MutableMappingsBuilder[F] = new MutableMappingsBuilder[F],
   queryTypeBuilder: GraphQLObjectType.Builder,
 ) {
   lazy val queryTypeName = queryTypeBuilder.build.getName
@@ -67,25 +67,25 @@ case class Builders(
   * A mutable builder DSL to define schema and mappings simultaneously.
   * See [[BuilderSpec]] for example usage.
   */
-trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
+trait SchemaAndMappingsMutableBuilderDsl[F[_]] extends SchemaDsl {
 
-  protected final def schemaAndMappings(mutate: Builders => Unit) = {
-    val builders = Builders(queryTypeBuilder = objectType("QueryType"))
+  protected final def schemaAndMappings(mutate: Builders[F] => Unit) = {
+    val builders = Builders[F](queryTypeBuilder = objectType("QueryType"))
     mutate(builders)
     builders.schemaBuilder.query(builders.queryTypeBuilder.build)
     (builders.schemaBuilder.build, builders.mappingsBuilder.build)
   }
 
-  implicit def mappingsFromBuilders(implicit builder: Builders): MutableMappingsBuilder = builder.mappingsBuilder
+  implicit def mappingsFromBuilders(implicit builder: Builders[F]): MutableMappingsBuilder[F] = builder.mappingsBuilder
 
   /** The Query type uses an ordinary object builder. But since we can't have multiple implicit object builders in
     * lexical scope, uses of the query type builder must be delimited.
     */
-  protected final def withQueryType(mutate: GraphQLObjectType.Builder => Unit)(implicit builder: Builders) = {
+  protected final def withQueryType(mutate: GraphQLObjectType.Builder => Unit)(implicit builder: Builders[F]) = {
     mutate(builder.queryTypeBuilder)
   }
 
-  protected final def addMappings(mappings: QueryMappings)(implicit mappingsBuilder: MutableMappingsBuilder): Unit = {
+  protected final def addMappings(mappings: QueryMappings[F])(implicit mappingsBuilder: MutableMappingsBuilder[F]): Unit = {
     mappingsBuilder.add(mappings)
   }
 
@@ -104,8 +104,8 @@ trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
   }
 
   implicit class FieldExtensions(field: GraphQLFieldDefinition) {
-    def ~>(reducer: QueryReducer[JsValue])
-          (implicit builders: Builders, obj: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder) = {
+    def ~>(reducer: QueryReducer[F, JsValue])
+          (implicit builders: Builders[F], obj: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder[F]) = {
       obj.field(field)
       val ObjectName = obj.build.getName
       val FieldName = field.getName
