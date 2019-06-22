@@ -81,10 +81,35 @@ This yields a `DBIO[JsObject]` that the compiler forms through the following tra
 
 The caller may then actually run the resulting DBIO using a Slick Database instance.
 
-TBD: Monads. Optimization. Derivation. Type Safety. Builder DSL. Arguments. Fragments. Runtime polymorphism.
+## Builder DSL
+
+Schemas (object types and field definitions) and mappings (reducers and resolvers) can be defined together (rather than separately) using the builder DSL. The builder DSL uses a "mutable builder" style:
+
+```scala
+class MySchema extends SchemaAndMappingsMutableBuilderDsl {
+  def mySchema = {
+    schemaAndMappings { implicit builders =>
+      withQueryType { implicit obj =>
+        field("humans", list(humanType)) ~> QueryReducers.jsObjects {
+          ...
+        }      
+      }
+      lazy val humanType = objectType("Human") { implicit obj =>
+        field("id", GraphQLID) ~> QueryReducers.mapped(_("id"))
+        field("name", GraphQLString) ~> QueryReducers.mapped(_("name"))
+      }
+    }
+  }
+}
+```
+
+See [BuilderDslSpec] for a more complete example.
+
+TBD: Monads. Optimization. Derivation. Type Safety. Arguments. Fragments. Runtime polymorphism.
 
 [1]: https://www.graphql-java.com/
 [2]: https://github.com/higherkindness/droste
 [3]: https://github.com/sellout/recursion-scheme-talk/blob/master/nanopass-compiler-talk.org
 [4]: https://sangria-graphql.org/
 [5]: https://www.graphql-java.com/documentation/v12/schema/
+[BuilderDslSpec]: https://github.com/Iterable/fixql/blob/master/fixql-core/src/test/scala/com/iterable/graphql/BuilderDslSpec.scala

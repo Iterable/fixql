@@ -35,6 +35,7 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
       field("humans", list(humanType)) ~> QueryReducer.jsObjects { _ =>
         DBIO.successful(repo.getHumans(1000, 0).map(Json.toJson(_).as[JsObject]))
       }
+          .mergeResolveSubfields
           .toTopLevelArray
     }
 
@@ -55,6 +56,7 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
       field("droids", list(droidType)) ~> QueryReducer.jsObjects { _ =>
         DBIO.successful(repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject]))
       }
+          .mergeResolveSubfields
           .toTopLevelArray
     }
 
