@@ -1,7 +1,7 @@
 package com.iterable.graphql
 
 import graphql.schema.GraphQLFieldDefinition.newFieldDefinition
-import graphql.schema.{GraphQLObjectType, GraphQLOutputType, GraphQLTypeReference}
+import graphql.schema.{GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLOutputType, GraphQLType, GraphQLTypeReference}
 
 /**
   * Simple syntactic wrappers around the GraphQL-Java schema builders
@@ -17,5 +17,13 @@ trait SchemaDsl {
 
   def typeRef(typeName: String) = {
     GraphQLTypeReference.typeRef(typeName)
+  }
+
+  def list(wrappedType: GraphQLType) = {
+    GraphQLList.list(wrappedType)
+  }
+
+  def nonNull(wrappedType: GraphQLType) = {
+    GraphQLNonNull.nonNull(wrappedType)
   }
 }

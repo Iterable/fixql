@@ -59,14 +59,21 @@ object FromGraphQLJava {
   def parseAndValidateQuery(graphQLSchema: GraphQLSchema, query: String, variables: Json): Try[Query[Field.Fixed]] = {
     val extractExecutionStrategy = new ContextExtractingExecutionStrategy
     Try {
-      val (context: ExecutionContext, fieldSubSelection: FieldSubSelection) = graphql.nextgen.GraphQL.newGraphQL(graphQLSchema)
+      val result = graphql.nextgen.GraphQL.newGraphQL(graphQLSchema)
         .executionStrategy(extractExecutionStrategy)
         .build()
         .execute(ExecutionInput.newExecutionInput(query)
           .variables(toJavaValues(variables).asInstanceOf[Map[String, AnyRef]].asJava)
           .build())
-        .getData[java.util.LinkedHashMap[String, Any]]
-        .get(null) // the map will have a value with key = null
+      val errors = result.getErrors
+      if (!errors.isEmpty) {
+        // TODO: consider using an Either
+        throw new IllegalArgumentException(errors.toString)
+      }
+      val (context: ExecutionContext, fieldSubSelection: FieldSubSelection) =
+        result
+          .getData[java.util.LinkedHashMap[String, Any]]
+          .get(null) // the map will have a value with key = null
 
       val valuesResolver = new ValuesResolver
       val topLevelFields: Seq[Field.Fixed] =

@@ -35,6 +35,8 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
       field("humans", list(humanType)) ~> QueryReducer.jsObjects { _ =>
         DBIO.successful(repo.getHumans(1000, 0).map(Json.toJson(_).as[JsObject]))
       }
+          .mergeResolveSubfields
+          .toTopLevelArray
     }
 
     // the lazy val is for the forward reference immediately above
@@ -54,6 +56,8 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
       field("droids", list(droidType)) ~> QueryReducer.jsObjects { _ =>
         DBIO.successful(repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject]))
       }
+          .mergeResolveSubfields
+          .toTopLevelArray
     }
 
     lazy val droidType = objectType("Droid") { implicit obj =>
@@ -72,7 +76,7 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
     val (schema, mappings) = buildSchemaAndMappings
     val knownSchema = FromGraphQLJava.parseSchema(simplifiedStarWarsSchema)
 
-    val printer = new SchemaPrinter(SchemaPrinter.Options.defaultOptions())
+    val printer = new SchemaPrinter()
     //println(printer.print(schema))
     //println(printer.print(knownSchema))
     printer.print(schema) shouldEqual printer.print(knownSchema)
@@ -95,12 +99,14 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
 
     val dbio = Compiler.compile(FromGraphQLJava.toSchemaFunction(schema), query, mappings)
     slickDb.run(dbio).map { queryResults =>
-      queryResults shouldEqual Json.obj(
-        "humans" -> Json.obj(
-          "id" -> "1000",
-          "name" -> "Luke Skywalker",
-          "homePlanet" -> "Tatooine"
-        )
+      val arr = (queryResults \ "humans").as[JsArray]
+      arr.value.size shouldEqual repo.getHumans(1000, 0).size
+      arr.value.head shouldEqual Json.obj(
+        "id" -> "1000",
+        "name" -> "Luke Skywalker",
+        "friends" -> Seq("1002", "1003", "2000", "2001"),
+        "appearsIn" -> Seq("NEWHOPE", "EMPIRE", "JEDI"),
+        "homePlanet" -> "Tatooine"
       )
     }
   }

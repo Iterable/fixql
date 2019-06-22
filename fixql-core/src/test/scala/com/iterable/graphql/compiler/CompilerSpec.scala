@@ -4,7 +4,7 @@ import com.iterable.graphql.FromGraphQLJava.parseSchema
 import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.{CharacterRepo, Field, FromGraphQLJava, Query, StarWarsSchema}
 import org.scalatest.{AsyncFlatSpec, Matchers}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import slick.jdbc.JdbcBackend
 import slick.dbio.DBIO
 
@@ -21,6 +21,7 @@ class CompilerSpec extends AsyncFlatSpec with Matchers with StarWarsSchema with 
       case TopLevelField("humans") => QueryReducer.jsObjects { _ =>
         DBIO.successful(repo.getHumans(1000, 0).map(Json.toJson(_).as[JsObject]))
       }
+          .toTopLevelArray
       case TopLevelField("droids") => QueryReducer.jsObjects { _ =>
         DBIO.successful(repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject]))
       }
@@ -41,15 +42,15 @@ class CompilerSpec extends AsyncFlatSpec with Matchers with StarWarsSchema with 
 
     val dbio = Compiler.compile(schema, query, resolvers)
     slickDb.run(dbio).map { queryResults =>
-      queryResults shouldEqual Json.obj(
-        "humans" -> Json.obj(
+      val arr = (queryResults \ "humans").as[JsArray]
+      arr.value.size shouldEqual repo.getHumans(1000, 0).size
+      arr.value.head shouldEqual Json.obj(
           "id" -> "1000",
           "name" -> "Luke Skywalker",
           "friends" -> Seq("1002", "1003", "2000", "2001"),
           "appearsIn" -> Seq("NEWHOPE", "EMPIRE", "JEDI"),
           "homePlanet" -> "Tatooine"
         )
-      )
     }
   }
 }

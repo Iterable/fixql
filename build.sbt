@@ -20,6 +20,7 @@ lazy val root = Project("fixql", file("."))
   .settings(name := "fixql")
   .aggregate(
     core,
+    derivation,
   )
 
 lazy val core = Project("fixql-core", file("fixql-core"))
@@ -39,3 +40,13 @@ lazy val core = Project("fixql-core", file("fixql-core"))
 
     "com.h2database" % "h2" % "1.4.187" % Test,
   ))
+
+lazy val derivation = Project("fixql-derivation", file("fixql-derivation"))
+  .settings(name := "fixql-derivation")
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.chuusai" %% "shapeless" % "2.3.3",
+      scalaTest % Test,
+    )
+  )
+  .dependsOn(core % "compile->compile;test->test")
