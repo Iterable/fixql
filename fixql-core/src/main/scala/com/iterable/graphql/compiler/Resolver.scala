@@ -4,7 +4,7 @@ import play.api.libs.json.JsObject
 import slick.dbio.DBIO
 
 /** A trait with case class subclasses lets us optimize later */
-trait Resolver[+A] {
+trait Resolver[F[_], A] {
   def jsonFieldName: String
 
   /** As the GraphQL tutorial says, "You can think of each field in a GraphQL query as a function or method of the
@@ -17,7 +17,7 @@ trait Resolver[+A] {
     * @return function from containing object data to the data for this field returned as a sequence
     *         parallel with the input sequence
     */
-  def resolveBatch: Seq[JsObject] => DBIO[Seq[A]]
+  def resolveBatch: Seq[JsObject] => F[Seq[A]]
 }
 
-case class ResolverFn[A](jsonFieldName: String)(val resolveBatch: Seq[JsObject] => DBIO[Seq[A]]) extends Resolver[A]
+case class ResolverFn[F[_], A](jsonFieldName: String)(val resolveBatch: Seq[JsObject] => F[Seq[A]]) extends Resolver[F, A]

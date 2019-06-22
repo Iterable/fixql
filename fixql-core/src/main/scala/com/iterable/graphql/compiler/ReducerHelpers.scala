@@ -17,8 +17,8 @@ trait ReducerHelpers {
 
   /** Resolves the overall query by sequencing all the top-level resolvers.
     */
-  protected final def rootMapping(implicit ec: ExecutionContext): QueryMappings = {
-    case (FieldTypeInfo(None, ""), Field("", _, _)) => QueryReducer { field: Field[Resolver[JsValue]] =>
+  protected final def rootMapping[F[_]](implicit ec: ExecutionContext): QueryMappings = {
+    case (FieldTypeInfo(None, ""), Field("", _, _)) => QueryReducer { field: Field[Resolver[F, JsValue]] =>
       ResolverFn("") { containers =>
         for {
           subfieldsValues <- DBIO.sequence(field.subfields.map { subfieldResolver =>
