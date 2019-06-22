@@ -1,6 +1,7 @@
 package com.iterable.graphql.compiler
 
-import cats.Monad
+import cats._
+import cats.implicits._
 import com.iterable.graphql.Field
 import play.api.libs.json.JsArray
 import play.api.libs.json.JsObject
@@ -18,7 +19,7 @@ object QueryReducer {
     }
   }
 
-  def topLevelArrayWithSubfields[F[_]](dbio: => F[Seq[JsObject]])(implicit ec: ExecutionContext): QueryReducer[F, JsArray] = {
+  def topLevelArrayWithSubfields[F[_]](dbio: => F[Seq[JsObject]])(implicit ec: ExecutionContext, F: Monad[F]): QueryReducer[F, JsArray] = {
     jsObjects { _ =>
       dbio
     } // This is an "illegal" state since top-level must be a Seq with one element
@@ -44,14 +45,14 @@ object QueryReducer {
   * of this field.
   */
 case class QueryReducer[F[_], +A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
-  def map[B](f: Seq[A] => Seq[B])(implicit ec: ExecutionContext): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+  def map[B](f: Seq[A] => Seq[B])(implicit ec: ExecutionContext, F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).map(f)
     }
   }
 
-  def flatMap[B](f: Field[Resolver[F, JsValue]] => Seq[A] => F[Seq[B]])(implicit ec: ExecutionContext): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+  def flatMap[B](f: Field[Resolver[F, JsValue]] => Seq[A] => F[Seq[B]])(implicit ec: ExecutionContext, F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).flatMap(f(field))
@@ -62,7 +63,7 @@ case class QueryReducer[F[_], +A](reducer: Field[Resolver[F, JsValue]] => Resolv
     * since Resolvers should always produce an output Seq that is parallel (and with the same size)
     * as the input Seq.
     */
-  def toTopLevelArray(implicit ec: ExecutionContext, writes: Writes[A]): QueryReducer[F, JsArray] = {
+  def toTopLevelArray(implicit ec: ExecutionContext, writes: Writes[A], F: Monad[F]): QueryReducer[F, JsArray] = {
     map { objs =>
       Seq(JsArray(objs.map(writes.writes)))
     }
@@ -72,14 +73,14 @@ case class QueryReducer[F[_], +A](reducer: Field[Resolver[F, JsValue]] => Resolv
     * When this field is many-to-one from its parents, then this field's values just have
     * the type Seq[T] and can be directly passed into subfield resolvers and merged.
     */
-  def mergeResolveSubfields(implicit ec: ExecutionContext, jsobjs: A <:< JsObject): QueryReducer[F, JsObject] = {
+  def mergeResolveSubfields(implicit ec: ExecutionContext, jsobjs: A <:< JsObject, F: Monad[F]): QueryReducer[F, JsObject] = {
     flatMap { field => resolved =>
       for {
-        _ <- DBIO.successful(())
+        _ <- F.unit
         entityJsons = resolved.map(x => x: JsObject) // apply the implicit coercion from A <:< JsObject
         entityJsonsWithSubfieldsValues <- mergeResolveSubfields(entityJsons, field)
       } yield {
-        entityJsonsWithSubfieldsValues
+        entityJsonsWithSubfieldsValues: Seq[JsObject]
       }
     }
   }
@@ -89,7 +90,7 @@ case class QueryReducer[F[_], +A](reducer: Field[Resolver[F, JsValue]] => Resolv
     * type Seq[Seq[T]] and must be flattened before being passed into subfield resolvers,
     * then unflattened before being merged.
     */
-  def mergeResolveSubfieldsMany(implicit ec: ExecutionContext, subseqs: A <:< Seq[JsObject]) = QueryReducer[F, JsArray] { field =>
+  def mergeResolveSubfieldsMany(implicit ec: ExecutionContext, subseqs: A <:< Seq[JsObject], F: Monad[F]) = QueryReducer[F, JsArray] { field =>
     val baseResolver = reducer(field)
     ResolverFn(baseResolver.jsonFieldName) { parents =>
       for {
@@ -104,7 +105,7 @@ case class QueryReducer[F[_], +A](reducer: Field[Resolver[F, JsValue]] => Resolv
   }
 
   protected final def mergeResolveSubfields(entityJsons: Seq[JsObject], field: Field[Resolver[F, JsValue]])
-    (implicit ec: ExecutionContext): DBIO[Seq[JsObject]] = {
+    (implicit ec: ExecutionContext, F: Monad[F]): F[Seq[JsObject]] = {
     for {
       // for each subfield, the value for all rows
       subfieldsValues: Seq[Seq[(String, JsValue)]] <- DBIO.sequence(
