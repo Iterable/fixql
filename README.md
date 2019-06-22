@@ -2,17 +2,17 @@
 [![Build Status](https://travis-ci.org/Iterable/fixql.svg?branch=master)](https://travis-ci.org/Iterable/fixql)
 
 A Scala GraphQL implementation based on fixpoint data types. This project aims to provide a GraphQL implementation that is small, easy-to-understand, and modular. Our implementation combines the following:
-- [GraphQL-Java][1] to do query parsing and validation. Parsing is modified to yield our own AST for execution.
-- Fixpoint data types from the [droste][2] library. Droste descends from the Matryoshka library.
-- Query execution implemented as a fold that "compiles" the query AST into a Slick DBIO (for now). This is influenced by Greg Pfeil's talk on [compiling with recursion schemes][3].
+- [GraphQL-Java] to do query parsing and validation. Parsing is modified to yield our own AST for execution.
+- Fixpoint data types from the [droste] library. Droste descends from the Matryoshka library.
+- Query execution implemented as a fold that "compiles" the query AST into a Slick DBIO (for now). This is influenced by Greg Pfeil's talk on [compiling with recursion schemes][pfeil-recursion-schemes].
 
-This work is also inspired by the [Sangria][4] GraphQL Scala library.
+This work is also inspired by the [Sangria] GraphQL Scala library.
 
 This project is under active development and is presently incomplete.
 
 ## Schemas and Resolvers
 
-Schemas are defined with GraphQL-Java's [GraphQLSchema][5] data type. Resolvers, in GraphQL terminology, fetch the data for a field. We define resolvers with:
+Schemas are defined with GraphQL-Java's [GraphQLSchema] data type. Resolvers, in GraphQL terminology, fetch the data for a field. We define resolvers with:
 
 ```scala
 trait Resolver[+A] {
@@ -107,9 +107,9 @@ See [BuilderDslSpec] for a more complete example.
 
 TBD: Monads. Optimization. Derivation. Type Safety. Arguments. Fragments. Runtime polymorphism.
 
-[1]: https://www.graphql-java.com/
-[2]: https://github.com/higherkindness/droste
-[3]: https://github.com/sellout/recursion-scheme-talk/blob/master/nanopass-compiler-talk.org
-[4]: https://sangria-graphql.org/
-[5]: https://www.graphql-java.com/documentation/v12/schema/
+[GraphQL-Java]: https://www.graphql-java.com/
+[droste]: https://github.com/higherkindness/droste
+[pfeil-recursion-schemes]: https://github.com/sellout/recursion-scheme-talk/blob/master/nanopass-compiler-talk.org
+[Sangria]: https://sangria-graphql.org/
+[GraphQLSchema]: https://www.graphql-java.com/documentation/v12/schema/
 [BuilderDslSpec]: https://github.com/Iterable/fixql/blob/master/fixql-core/src/test/scala/com/iterable/graphql/BuilderDslSpec.scala
