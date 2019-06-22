@@ -105,7 +105,30 @@ class MySchema extends SchemaAndMappingsMutableBuilderDsl {
 
 See [BuilderDslSpec] for a more complete example.
 
-TBD: Monads. Optimization. Derivation. Type Safety. Arguments. Fragments. Runtime polymorphism.
+## Derivation
+
+In simple cases, an object's fields and mappings can be derived from a case class. The `fixql-derivation` module contains Shapeless-based helpers to derive such fields along with their mappings and resolvers. For example:
+
+```scala
+case class Human(id: String, name: String, homePlanet: Option[String])
+
+lazy val humanType = objectType("Human") { implicit obj =>
+  field("id", GraphQLID) ~> QueryReducer.maped(_("id"))
+  
+  addDerived[Human].fieldsAndMappings('name, 'homePlanet)
+}
+```
+
+For the specified fields, automatic derivation generates a field with:
+- the same name as the case class field's name
+- a GraphQLType corresponding to the field's Scala type, handling `Seq`'s and `Option`'s appropriately
+- a mapping to a resolver that fetches the field's data from the containing object data, under the assumption that the containing object has already fetched the field's data
+
+The generated resolver limits derivation to the simplest cases. In non-trivial cases, one should define mappings explicitly. Nonetheless, derivation can eliminate significant boilerplate.
+
+See [DerivationSpec] for a more complete usage example.
+
+TBD: Monads. Optimization. Type Safety. Arguments. Fragments. Runtime polymorphism.
 
 [GraphQL-Java]: https://www.graphql-java.com/
 [droste]: https://github.com/higherkindness/droste
@@ -113,3 +136,4 @@ TBD: Monads. Optimization. Derivation. Type Safety. Arguments. Fragments. Runtim
 [Sangria]: https://sangria-graphql.org/
 [GraphQLSchema]: https://www.graphql-java.com/documentation/v12/schema/
 [BuilderDslSpec]: https://github.com/Iterable/fixql/blob/master/fixql-core/src/test/scala/com/iterable/graphql/BuilderDslSpec.scala
+[DerivationSpec]: https://github.com/Iterable/fixql/blob/master/fixql-derivation/src/test/scala/com/iterable/graphql/derivation/DerivationSpec.scala
