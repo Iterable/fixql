@@ -43,7 +43,7 @@ object QueryReducer {
   * returned Resolver can depend on the (recursively generated) Resolvers for the subfields
   * of this field.
   */
-case class QueryReducer[F[_], +A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
+case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
   def map[B](f: Seq[A] => Seq[B])(implicit ec: ExecutionContext, F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
