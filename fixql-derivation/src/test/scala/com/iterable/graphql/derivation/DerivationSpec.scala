@@ -19,7 +19,6 @@ class DerivationSpec extends AsyncFlatSpec with Matchers
 
   "object type derivation" should "generate the expected object type" in {
     val objectType = DeriveGraphQLType[Test]("Test").allFields
-
     val expected = GraphQLObjectType.newObject()
       .name("Test")
       .field(field("foo", nonNull(GraphQLString)))

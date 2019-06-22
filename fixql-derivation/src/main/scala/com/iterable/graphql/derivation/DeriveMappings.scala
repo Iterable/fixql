@@ -23,7 +23,8 @@ object DeriveMappings {
     (implicit gen: LabelledGeneric.Aux[T, L],
      keys: Keys.Aux[L, K],
      set: ToTraversable.Aux[K, Set, Symbol]): QueryMappings = {
-      deriveMappings(TypeName)
+      val fieldNames = set.apply(keys.apply()).map(_.name)
+      fieldMappings(TypeName, fieldNames)
     }
 
     /** Only include the selected fields in the generated mappings. If you want to
@@ -39,14 +40,6 @@ object DeriveMappings {
       val fieldNames = set.apply(select.apply(keys.apply())).map(_.name)
       fieldMappings(TypeName, fieldNames)
     }
-  }
-
-  def deriveMappings[T, L <: HList, K <: HList](TypeName: String)
-  (implicit gen: LabelledGeneric.Aux[T, L],
-   keys: Keys.Aux[L, K],
-   set: ToTraversable.Aux[K, Set, Symbol]): QueryMappings = {
-    val fieldNames = set.apply(keys.apply()).map(_.name)
-    fieldMappings(TypeName, fieldNames)
   }
 
   private def fieldMappings(TypeName: String, fieldNames: Set[String]) = {

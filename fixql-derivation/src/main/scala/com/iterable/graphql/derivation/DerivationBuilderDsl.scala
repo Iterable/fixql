@@ -14,13 +14,12 @@ import shapeless.ops.record.{Keys, SelectAll, ToMap}
 trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
   self =>
 
-  protected final def addDerived[T]
-  (implicit obj: GraphQLObjectType.Builder)= {
+  protected final def addDerived[T](implicit obj: GraphQLObjectType.Builder)= {
     new AddDerived[T](obj.build.getName)
   }
 
   class AddDerived[T](name: String)(implicit obj: GraphQLObjectType.Builder) extends SingletonProductArgs {
-    def fieldsAndMappingsProduct[L <: HList, O <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList, K <: HList]
+    def fieldsAndMappingsProduct[L <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList, K <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],
@@ -37,7 +36,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
       mappingsProduct(selections)
     }
 
-    def fieldsProduct[L <: HList, O <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
+    def fieldsProduct[L <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],

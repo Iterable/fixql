@@ -30,8 +30,10 @@ object DeriveGraphQLType {
     (implicit gen: LabelledGeneric.Aux[T, L],
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
      toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
-    ) = {
-      deriveGraphQLObjectType(name)
+    ): GraphQLObjectType = {
+      val mv = mapValues.apply()
+      val map = toMap.apply(mv)
+      createObjectType(name, map)
     }
 
     /** Only include the selected fields in the generated object type. If you want to
@@ -46,22 +48,11 @@ object DeriveGraphQLType {
      mapValues: MapValuesNull.Aux[ToGraphQLType.type, L2, MV],
     // The _ should be Symbol but doesn't type-check for some reason
      toMap: ToMap.Aux[MV, _, GraphQLOutputType]
-    ) = {
+    ): GraphQLObjectType = {
       val mv = mapValues.apply()
       val map = toMap.apply(mv)
       createObjectType(name, map.map { case (key, value) => key.asInstanceOf[Symbol] -> value})
     }
-  }
-
-  def deriveGraphQLObjectType[T, L <: HList, O <: HList, MV <: HList]
-  (typeName: String)
-  (implicit gen: LabelledGeneric.Aux[T, L],
-   mapValues: MapValuesNull.Aux[ToGraphQLType.type, L, MV],
-   toMap: ToMap.Aux[MV, Symbol, GraphQLOutputType]
-  ): GraphQLObjectType = {
-    val mv = mapValues.apply()
-    val map = toMap.apply(mv)
-    createObjectType(typeName, map)
   }
 
   private def createObjectType(name: String, map: Map[Symbol, GraphQLOutputType]) = {
@@ -72,6 +63,8 @@ object DeriveGraphQLType {
         .`type`(typ)
         .build
     }
+    // This object is just a container for the fields.
+    // We could just as well return Seq[FieldDefinition] instead
     GraphQLObjectType.newObject()
       .name(name)
       .fields(fieldDefs.toSeq.asJava)
