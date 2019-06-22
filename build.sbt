@@ -40,6 +40,7 @@ lazy val core = Project("fixql-core", file("fixql-core"))
 
     "com.h2database" % "h2" % "1.4.187" % Test,
   ))
+  .settings(addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0"))
 
 lazy val derivation = Project("fixql-derivation", file("fixql-derivation"))
   .settings(name := "fixql-derivation")
