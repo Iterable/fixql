@@ -2,7 +2,7 @@ package com.iterable.graphql.derivation
 
 import java.math.BigInteger
 
-import graphql.schema.{GraphQLOutputType, GraphQLTypeUtil}
+import graphql.schema.{GraphQLList, GraphQLOutputType, GraphQLTypeUtil}
 import graphql.schema.GraphQLNonNull.nonNull
 import graphql.Scalars._
 import shapeless.<:!<
@@ -39,11 +39,21 @@ object IsGraphQLOutputType {
   implicit val bigDecimalIsGraphQLType: IsGraphQLOutputType[BigDecimal] =
     SimpleIsGraphQLOutputType(nonNull(GraphQLBigDecimal))
 
+  /**
+    * @param notOption GraphQL has no corresponding type for Option[Option[A]] so we suppress it for derivation
+    *                  by disallowing T <: Option{_]
+    */
   implicit def optIsGraphQLType[T]
   (implicit t: IsGraphQLOutputType[T],
    notOption: T <:!< Option[_]): IsGraphQLOutputType[Option[T]] = {
     SimpleIsGraphQLOutputType(
       GraphQLTypeUtil.unwrapNonNull(t.graphQLType).asInstanceOf[GraphQLOutputType]
+    )
+  }
+
+  implicit def seqIsGraphQLType[T](implicit t: IsGraphQLOutputType[T]): IsGraphQLOutputType[Seq[T]] = {
+    SimpleIsGraphQLOutputType(
+      GraphQLList.list(t.graphQLType)
     )
   }
 }
