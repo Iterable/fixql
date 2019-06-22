@@ -8,7 +8,6 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import play.api.libs.json.Writes
-import slick.dbio.DBIO
 
 import scala.concurrent.ExecutionContext
 
@@ -108,8 +107,8 @@ case class QueryReducer[F[_], +A](reducer: Field[Resolver[F, JsValue]] => Resolv
     (implicit ec: ExecutionContext, F: Monad[F]): F[Seq[JsObject]] = {
     for {
       // for each subfield, the value for all rows
-      subfieldsValues: Seq[Seq[(String, JsValue)]] <- DBIO.sequence(
-        field.subfields.map { subfield =>
+      subfieldsValues: Seq[Seq[(String, JsValue)]] <- Traverse[List].sequence(
+        field.subfields.toList.map { subfield =>
           subfield.resolveBatch.apply(entityJsons).map(_.map(subfield.jsonFieldName -> _))
         }
       )
