@@ -1,5 +1,7 @@
 package com.iterable.graphql.derivation
 
+import java.math.BigInteger
+
 import graphql.schema.{GraphQLOutputType, GraphQLTypeUtil}
 import graphql.schema.GraphQLNonNull.nonNull
 import graphql.Scalars._
@@ -24,6 +26,18 @@ object IsGraphQLOutputType {
     SimpleIsGraphQLOutputType(nonNull(GraphQLBoolean))
   implicit val longIsGraphQLType: IsGraphQLOutputType[Long] =
     SimpleIsGraphQLOutputType(nonNull(GraphQLLong))
+  implicit val doubleIsGraphQLType: IsGraphQLOutputType[Double] =
+    SimpleIsGraphQLOutputType(nonNull(GraphQLFloat))
+  implicit val charIsGraphQLType: IsGraphQLOutputType[Char] =
+    SimpleIsGraphQLOutputType(nonNull(GraphQLChar))
+  implicit val byteIsGraphQLType: IsGraphQLOutputType[Byte] =
+    SimpleIsGraphQLOutputType(nonNull(GraphQLByte))
+  implicit val shortIsGraphQLType: IsGraphQLOutputType[Short] =
+    SimpleIsGraphQLOutputType(nonNull(GraphQLShort))
+  implicit val bigIntIsGraphQLType: IsGraphQLOutputType[BigInteger] =
+    SimpleIsGraphQLOutputType(nonNull(GraphQLBigInteger))
+  implicit val bigDecimalIsGraphQLType: IsGraphQLOutputType[BigDecimal] =
+    SimpleIsGraphQLOutputType(nonNull(GraphQLBigDecimal))
 
   implicit def optIsGraphQLType[T]
   (implicit t: IsGraphQLOutputType[T],
