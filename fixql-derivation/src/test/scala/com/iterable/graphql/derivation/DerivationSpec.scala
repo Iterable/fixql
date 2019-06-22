@@ -84,8 +84,7 @@ class DerivationSpec extends AsyncFlatSpec with Matchers
           objectType("Human") { implicit obj =>
             field("id", GraphQLID) ~> QueryReducer.mapped(_("id"))
 
-            import shapeless.syntax.singleton._
-            derive[Human].addFieldsAndMappings('name.narrow :: 'homePlanet.narrow :: HNil)
+            addDerived[Human].fieldsAndMappings('name, 'homePlanet)
           }
 
         addMappings(standardMappings)
