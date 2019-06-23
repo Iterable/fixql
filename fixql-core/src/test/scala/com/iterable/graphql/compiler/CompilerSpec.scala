@@ -25,6 +25,7 @@ class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with Reduc
       case TopLevelField("droids") => QueryReducer.topLevelObjectsListWithSubfields[Id] {
         repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject])
       }
+      case ObjectField("Human", "id") => QueryReducer.mapped(_("id"))
       case ObjectField("Human", "name") => QueryReducer.mapped(_("name"))
     }: QueryMappings[Id]).orElse(rootMapping)
 
@@ -34,7 +35,8 @@ class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with Reduc
         Seq(
           Field("humans",
             subfields = Seq(
-              Field("name").fix
+              Field("id"),
+              Field("name"),
             )
           ).fix
         )
@@ -44,11 +46,8 @@ class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with Reduc
     val arr = (queryResults \ "humans").as[JsArray]
     arr.value.size shouldEqual repo.getHumans(1000, 0).size
     arr.value.head shouldEqual Json.obj(
-        "id" -> "1000",
-        "name" -> "Luke Skywalker",
-        "friends" -> Seq("1002", "1003", "2000", "2001"),
-        "appearsIn" -> Seq("NEWHOPE", "EMPIRE", "JEDI"),
-        "homePlanet" -> "Tatooine"
-      )
+      "id" -> "1000",
+      "name" -> "Luke Skywalker",
+    )
   }
 }

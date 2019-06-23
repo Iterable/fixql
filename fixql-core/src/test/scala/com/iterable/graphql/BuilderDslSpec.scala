@@ -88,7 +88,9 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl[Id
         Seq(
           Field("humans",
             subfields = Seq(
-              Field("name").fix
+              Field("id"),
+              Field("name"),
+              // TODO: add homePlanet
             )
           ).fix
         )
@@ -100,9 +102,6 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl[Id
     arr.value.head shouldEqual Json.obj(
       "id" -> "1000",
       "name" -> "Luke Skywalker",
-      "friends" -> Seq("1002", "1003", "2000", "2001"),
-      "appearsIn" -> Seq("NEWHOPE", "EMPIRE", "JEDI"),
-      "homePlanet" -> "Tatooine"
     )
   }
 
