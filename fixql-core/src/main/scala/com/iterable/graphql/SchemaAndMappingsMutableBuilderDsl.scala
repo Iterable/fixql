@@ -67,25 +67,25 @@ case class Builders[F[_]](
   * A mutable builder DSL to define schema and mappings simultaneously.
   * See [[BuilderSpec]] for example usage.
   */
-trait SchemaAndMappingsMutableBuilderDsl[F[_]] extends SchemaDsl {
+trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
 
-  protected final def schemaAndMappings(mutate: Builders[F] => Unit) = {
+  protected final def schemaAndMappings[F[_]](mutate: Builders[F] => Unit) = {
     val builders = Builders[F](queryTypeBuilder = objectType("QueryType"))
     mutate(builders)
     builders.schemaBuilder.query(builders.queryTypeBuilder.build)
     (builders.schemaBuilder.build, builders.mappingsBuilder.build)
   }
 
-  implicit def mappingsFromBuilders(implicit builder: Builders[F]): MutableMappingsBuilder[F] = builder.mappingsBuilder
+  implicit def mappingsFromBuilders[F[_]](implicit builder: Builders[F]): MutableMappingsBuilder[F] = builder.mappingsBuilder
 
   /** The Query type uses an ordinary object builder. But since we can't have multiple implicit object builders in
     * lexical scope, uses of the query type builder must be delimited.
     */
-  protected final def withQueryType(mutate: GraphQLObjectType.Builder => Unit)(implicit builder: Builders[F]) = {
+  protected final def withQueryType[F[_]](mutate: GraphQLObjectType.Builder => Unit)(implicit builder: Builders[F]) = {
     mutate(builder.queryTypeBuilder)
   }
 
-  protected final def addMappings(mappings: QueryMappings[F])(implicit mappingsBuilder: MutableMappingsBuilder[F]): Unit = {
+  protected final def addMappings[F[_]](mappings: QueryMappings[F])(implicit mappingsBuilder: MutableMappingsBuilder[F]): Unit = {
     mappingsBuilder.add(mappings)
   }
 
@@ -104,7 +104,7 @@ trait SchemaAndMappingsMutableBuilderDsl[F[_]] extends SchemaDsl {
   }
 
   implicit class FieldExtensions(field: GraphQLFieldDefinition) {
-    def ~>(reducer: QueryReducer[F, JsValue])
+    def ~>[F[_]](reducer: QueryReducer[F, JsValue])
           (implicit builders: Builders[F], obj: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder[F]) = {
       obj.field(field)
       val ObjectName = obj.build.getName

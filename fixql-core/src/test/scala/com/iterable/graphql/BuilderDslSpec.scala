@@ -8,7 +8,7 @@ import graphql.schema.{GraphQLObjectType, GraphQLSchema, GraphQLType}
 import org.scalatest.{FlatSpec, Matchers}
 import play.api.libs.json.{JsArray, JsObject, Json}
 
-class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl[Id] with SchemaDsl with ReducerHelpers with Matchers {
+class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl with SchemaDsl with ReducerHelpers with Matchers {
 
   private val repo = new CharacterRepo
 
