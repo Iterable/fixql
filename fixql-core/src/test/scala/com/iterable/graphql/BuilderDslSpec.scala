@@ -3,20 +3,16 @@ package com.iterable.graphql
 import cats.Id
 import com.iterable.graphql.compiler.{Compiler, QueryMappings, QueryReducer, ReducerHelpers}
 import graphql.Scalars._
-import graphql.schema.GraphQLList.list
-import graphql.schema.GraphQLNonNull.nonNull
 import graphql.schema.idl.SchemaPrinter
 import graphql.schema.{GraphQLObjectType, GraphQLSchema, GraphQLType}
 import org.scalatest.{FlatSpec, Matchers}
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import slick.jdbc.JdbcBackend
+import play.api.libs.json.{JsArray, JsObject, Json}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl[Id] with SchemaDsl with ReducerHelpers with Matchers {
 
   private val repo = new CharacterRepo
-  private val slickDb = JdbcBackend.Database.forURL("jdbc:h2:mem:test", driver = "org.h2.Driver")
 
   def buildSchemaAndMappings: (GraphQLSchema, QueryMappings[Id]) = {
     schemaAndMappings { implicit builders =>

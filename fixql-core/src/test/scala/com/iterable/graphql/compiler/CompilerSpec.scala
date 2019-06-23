@@ -6,12 +6,9 @@ import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.{CharacterRepo, Field, FromGraphQLJava, Query, StarWarsSchema}
 import org.scalatest.{FlatSpec, Matchers}
 import play.api.libs.json.{JsArray, JsObject, Json}
-import slick.jdbc.JdbcBackend
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with ReducerHelpers {
-
-  private val slickDb = JdbcBackend.Database.forURL("jdbc:h2:mem:test", driver = "org.h2.Driver")
 
   "Compiler" should "compile" in {
     val graphQLSchema = parseSchema(starWarsSchema)
