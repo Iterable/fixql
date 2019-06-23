@@ -9,7 +9,6 @@ import graphql.schema.idl.SchemaPrinter
 import io.circe.Json
 import org.scalatest.{FlatSpec, Matchers}
 import play.api.libs.json.{JsArray, JsNull, JsObject, JsString, Json => PlayJson}
-import slick.jdbc.JdbcBackend
 
 class DerivationSpec extends FlatSpec with Matchers
   with SchemaAndMappingsMutableBuilderDsl with ReducerHelpers with DerivationBuilderDsl {
@@ -30,7 +29,6 @@ class DerivationSpec extends FlatSpec with Matchers
   }
 
   private val repo = new CharacterRepo
-  private val slickDb = JdbcBackend.Database.forURL("jdbc:h2:mem:test", driver = "org.h2.Driver")
 
   // TODO: add negative tests to verify query syntax validation fails when you
   // specify fields that aren't in the case class
