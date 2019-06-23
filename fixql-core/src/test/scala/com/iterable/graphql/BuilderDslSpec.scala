@@ -9,7 +9,6 @@ import graphql.schema.idl.SchemaPrinter
 import graphql.schema.{GraphQLObjectType, GraphQLSchema, GraphQLType}
 import org.scalatest.{FlatSpec, Matchers}
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import slick.dbio.DBIO
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global

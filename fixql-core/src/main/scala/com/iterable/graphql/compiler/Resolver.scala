@@ -1,7 +1,6 @@
 package com.iterable.graphql.compiler
 
 import play.api.libs.json.JsObject
-import slick.dbio.DBIO
 
 /** A trait with case class subclasses lets us optimize later */
 trait Resolver[F[_], A] {
