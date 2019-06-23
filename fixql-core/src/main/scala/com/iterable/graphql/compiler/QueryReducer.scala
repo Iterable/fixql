@@ -43,25 +43,24 @@ object QueryReducer {
   */
 case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
   def asJsValue(implicit subJsValue: A <:< JsValue, F: Monad[F]): QueryReducer[F, JsValue] = {
-    mapEach(x => x: JsValue)
+    map(x => x: JsValue)
   }
 
-  def mapEach[B](f: A => B)(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+  def map[B](f: A => B)(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).map(_.map(f))
     }
   }
 
-  // TODO: rename to mapBatch
-  def map[B](f: Seq[A] => Seq[B])(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+  def mapBatch[B](f: Seq[A] => Seq[B])(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).map(f)
     }
   }
 
-  def flatMap[B](f: Field[Resolver[F, JsValue]] => Seq[A] => F[Seq[B]])(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+  def flatMapBatch[B](f: Field[Resolver[F, JsValue]] => Seq[A] => F[Seq[B]])(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).flatMap(f(field))
@@ -73,7 +72,7 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
     * as the input Seq.
     */
   def toTopLevelArray(implicit writes: Writes[A], F: Monad[F]): QueryReducer[F, JsValue] = {
-    map { objs =>
+    mapBatch { objs =>
       Seq(JsArray(objs.map(writes.writes)))
     }
       .asJsValue
@@ -84,7 +83,7 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
     * the type Seq[T] and can be directly passed into subfield resolvers and merged.
     */
   def mergeResolveSubfields(implicit jsobjs: A <:< JsObject, F: Monad[F]): QueryReducer[F, JsObject] = {
-    flatMap { field => resolved =>
+    flatMapBatch { field =>resolved =>
       for {
         _ <- F.unit
         entityJsons = resolved.map(x => x: JsObject) // apply the implicit coercion from A <:< JsObject
