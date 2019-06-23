@@ -10,8 +10,6 @@ import qq.droste.data.Attr
 import qq.droste.data.Fix
 import cats.implicits._
 
-import scala.concurrent.ExecutionContext
-
 object Compiler {
 
   /** Given a schema, query, and mappings that specify resolvers for each field in the schema,
@@ -19,7 +17,7 @@ object Compiler {
     * @return an object of the query type
     */
   def compile[F[_]](schema: Schema, query: Query[Field.Fixed], mappings: QueryMappings[F])
-    (implicit ec: ExecutionContext, F: Monad[F]): F[JsObject] = {
+    (implicit F: Monad[F]): F[JsObject] = {
     val annotated: Query[Field.Annotated[FieldTypeInfo]] = annotateWithTypeInfo(schema, query)
 
     val mappingsFn = toMappingFunction(mappings)

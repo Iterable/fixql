@@ -6,7 +6,6 @@ import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.{CharacterRepo, Field, FromGraphQLJava, Query, StarWarsSchema}
 import org.scalatest.{FlatSpec, Matchers}
 import play.api.libs.json.{JsArray, JsObject, Json}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with ReducerHelpers {
 
