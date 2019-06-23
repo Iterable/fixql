@@ -18,7 +18,7 @@ object QueryReducer {
     }
   }
 
-  def topLevelArrayWithSubfields[F[_]](dbio: => F[Seq[JsObject]])(implicit ec: ExecutionContext, F: Monad[F]): QueryReducer[F, JsArray] = {
+  def topLevelObjectsListWithSubfields[F[_]](dbio: => F[Seq[JsObject]])(implicit ec: ExecutionContext, F: Monad[F]): QueryReducer[F, JsValue] = {
     jsObjects { _ =>
       dbio
     } // This is an "illegal" state since top-level must be a Seq with one element
@@ -44,6 +44,18 @@ object QueryReducer {
   * of this field.
   */
 case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
+  def asJsValue(implicit subJsValue: A <:< JsValue, F: Monad[F]): QueryReducer[F, JsValue] = {
+    mapEach(x => x: JsValue)
+  }
+
+  def mapEach[B](f: A => B)(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+    val resolved = reducer(field)
+    ResolverFn(resolved.jsonFieldName) { parents =>
+      resolved.resolveBatch(parents).map(_.map(f))
+    }
+  }
+
+  // TODO: rename to mapBatch
   def map[B](f: Seq[A] => Seq[B])(implicit ec: ExecutionContext, F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
@@ -62,10 +74,11 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
     * since Resolvers should always produce an output Seq that is parallel (and with the same size)
     * as the input Seq.
     */
-  def toTopLevelArray(implicit ec: ExecutionContext, writes: Writes[A], F: Monad[F]): QueryReducer[F, JsArray] = {
+  def toTopLevelArray(implicit ec: ExecutionContext, writes: Writes[A], F: Monad[F]): QueryReducer[F, JsValue] = {
     map { objs =>
       Seq(JsArray(objs.map(writes.writes)))
     }
+      .asJsValue
   }
 
   /**

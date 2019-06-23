@@ -1,24 +1,25 @@
 package com.iterable.graphql
 
+import cats.Id
 import com.iterable.graphql.compiler.{Compiler, QueryMappings, QueryReducer, ReducerHelpers}
 import graphql.Scalars._
 import graphql.schema.GraphQLList.list
 import graphql.schema.GraphQLNonNull.nonNull
 import graphql.schema.idl.SchemaPrinter
-import graphql.schema.{GraphQLSchema, GraphQLType}
+import graphql.schema.{GraphQLObjectType, GraphQLSchema, GraphQLType}
 import org.scalatest.{FlatSpec, Matchers}
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import slick.dbio.DBIO
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl with SchemaDsl with ReducerHelpers with Matchers {
+class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl[Id] with SchemaDsl with ReducerHelpers with Matchers {
 
   private val repo = new CharacterRepo
   private val slickDb = JdbcBackend.Database.forURL("jdbc:h2:mem:test", driver = "org.h2.Driver")
 
-  def buildSchemaAndMappings: (GraphQLSchema, QueryMappings) = {
+  def buildSchemaAndMappings: (GraphQLSchema, QueryMappings[Id]) = {
     schemaAndMappings { implicit builders =>
       // We have a circular reference between Droid and Human so we need to use type references
       val droidTypeRef = typeRef("Droid")
@@ -30,13 +31,11 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
     }
   }
 
-  def humanMappings(droidType: GraphQLType) = WithBuilders { implicit builder =>
+  def humanMappings(droidType: GraphQLType) = WithBuilders[Id, GraphQLObjectType] { implicit builder =>
     withQueryType { implicit obj =>
-      field("humans", list(humanType)) ~> QueryReducer.jsObjects { _ =>
-        DBIO.successful(repo.getHumans(1000, 0).map(Json.toJson(_).as[JsObject]))
+      field("humans", list(humanType)) ~> QueryReducer.topLevelObjectsListWithSubfields[Id] {
+        repo.getHumans(1000, 0).map(Json.toJson(_).as[JsObject])
       }
-          .mergeResolveSubfields
-          .toTopLevelArray
     }
 
     // the lazy val is for the forward reference immediately above
@@ -51,13 +50,11 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
     humanType
   }
 
-  def droidMappings(humanType: GraphQLType) = WithBuilders { implicit builder =>
+  def droidMappings(humanType: GraphQLType) = WithBuilders[Id, GraphQLObjectType] { implicit builder =>
     withQueryType { implicit obj =>
-      field("droids", list(droidType)) ~> QueryReducer.jsObjects { _ =>
-        DBIO.successful(repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject]))
+      field("droids", list(droidType)) ~> QueryReducer.topLevelObjectsListWithSubfields[Id] {
+        repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject])
       }
-          .mergeResolveSubfields
-          .toTopLevelArray
     }
 
     lazy val droidType = objectType("Droid") { implicit obj =>
@@ -97,18 +94,16 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
         )
       )
 
-    val dbio = Compiler.compile(FromGraphQLJava.toSchemaFunction(schema), query, mappings)
-    slickDb.run(dbio).map { queryResults =>
-      val arr = (queryResults \ "humans").as[JsArray]
-      arr.value.size shouldEqual repo.getHumans(1000, 0).size
-      arr.value.head shouldEqual Json.obj(
-        "id" -> "1000",
-        "name" -> "Luke Skywalker",
-        "friends" -> Seq("1002", "1003", "2000", "2001"),
-        "appearsIn" -> Seq("NEWHOPE", "EMPIRE", "JEDI"),
-        "homePlanet" -> "Tatooine"
-      )
-    }
+    val queryResults = Compiler.compile(FromGraphQLJava.toSchemaFunction(schema), query, mappings)
+    val arr = (queryResults \ "humans").as[JsArray]
+    arr.value.size shouldEqual repo.getHumans(1000, 0).size
+    arr.value.head shouldEqual Json.obj(
+      "id" -> "1000",
+      "name" -> "Luke Skywalker",
+      "friends" -> Seq("1002", "1003", "2000", "2001"),
+      "appearsIn" -> Seq("NEWHOPE", "EMPIRE", "JEDI"),
+      "homePlanet" -> "Tatooine"
+    )
   }
 
   private val simplifiedStarWarsSchema =
