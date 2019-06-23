@@ -27,8 +27,7 @@ object Compiler {
     // The root resolvers are applied with a singleton list containing an empty Json object
     // as the set of parents
     val containersAtRoot = Seq(Json.obj())
-    val dbio = rootResolver.resolveBatch.apply(containersAtRoot).map(_.head.as[JsObject])
-    dbio
+    rootResolver.resolveBatch.apply(containersAtRoot).map(_.head.as[JsObject])
   }
 
   /** Given a schema and a query represented as a Field tree, returns a new Field tree annotated with the
