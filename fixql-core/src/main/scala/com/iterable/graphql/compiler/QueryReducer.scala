@@ -16,7 +16,7 @@ object QueryReducer {
     }
   }
 
-  def topLevelObjectsListWithSubfields[F[_]](dbio: => F[Seq[JsObject]])(implicit F: Monad[F]): QueryReducer[F, JsValue] = {
+  def topLevelObjectsListWithSubfields[F[_] : Monad](dbio: => F[Seq[JsObject]]): QueryReducer[F, JsValue] = {
     jsObjects { _ =>
       dbio
     } // This is an "illegal" state since top-level must be a Seq with one element

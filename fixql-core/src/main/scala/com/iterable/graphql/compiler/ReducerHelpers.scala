@@ -10,13 +10,13 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 
 trait ReducerHelpers {
-  protected final def standardMappings[F[_]](implicit F: Monad[F]): QueryMappings[F] = {
+  protected final def standardMappings[F[_] : Monad]: QueryMappings[F] = {
     rootMapping[F] orElse introspectionMappings[F]
   }
 
   /** Resolves the overall query by sequencing all the top-level resolvers.
     */
-  protected final def rootMapping[F[_]](implicit F: Monad[F]): QueryMappings[F] = {
+  protected final def rootMapping[F[_] : Monad]: QueryMappings[F] = {
     case (FieldTypeInfo(None, ""), Field("", _, _)) => QueryReducer { field: Field[Resolver[F, JsValue]] =>
       ResolverFn("") { containers =>
         for {
@@ -34,7 +34,7 @@ trait ReducerHelpers {
 
   /** Resolves queries for "__typename"
     */
-  protected final def introspectionMappings[F[_]](implicit F: Monad[F]): QueryMappings[F] = {
+  protected final def introspectionMappings[F[_] : Monad]: QueryMappings[F] = {
     val TypeNameField = Introspection.TypeNameMetaFieldDef.getName
 
     {

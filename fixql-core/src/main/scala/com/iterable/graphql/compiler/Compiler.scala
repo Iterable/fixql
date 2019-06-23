@@ -16,8 +16,7 @@ object Compiler {
     * generates the root resolver, then runs it.
     * @return an object of the query type
     */
-  def compile[F[_]](schema: Schema, query: Query[Field.Fixed], mappings: QueryMappings[F])
-    (implicit F: Monad[F]): F[JsObject] = {
+  def compile[F[_] : Monad](schema: Schema, query: Query[Field.Fixed], mappings: QueryMappings[F]): F[JsObject] = {
     val annotated: Query[Field.Annotated[FieldTypeInfo]] = annotateWithTypeInfo(schema, query)
 
     val mappingsFn = toMappingFunction(mappings)
