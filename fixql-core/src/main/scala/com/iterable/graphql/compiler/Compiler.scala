@@ -1,5 +1,6 @@
 package com.iterable.graphql.compiler
 
+import cats.Functor
 import com.iterable.graphql.Field
 import com.iterable.graphql.Query
 import play.api.libs.json.JsObject
@@ -7,9 +8,7 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import qq.droste.data.Attr
 import qq.droste.data.Fix
-import slick.dbio.DBIO
-
-import scala.concurrent.ExecutionContext
+import cats.implicits._
 
 object Compiler {
 
@@ -17,20 +16,18 @@ object Compiler {
     * generates the root resolver, then runs it.
     * @return an object of the query type
     */
-  def compile(schema: Schema, query: Query[Field.Fixed], mappings: QueryMappings)
-    (implicit ec: ExecutionContext): DBIO[JsObject] = {
+  def compile[F[_] : Functor](schema: Schema, query: Query[Field.Fixed], mappings: QueryMappings[F]): F[JsObject] = {
     val annotated: Query[Field.Annotated[FieldTypeInfo]] = annotateWithTypeInfo(schema, query)
 
     val mappingsFn = toMappingFunction(mappings)
 
     val annotatedRoot: Field.Annotated[FieldTypeInfo] = Attr(FieldTypeInfo(None, "") -> annotated.fieldTreeRoot)
-    val rootResolver = annotatedFold[FieldTypeInfo, Resolver[JsValue]](mappingsFn)(annotatedRoot)
+    val rootResolver = annotatedFold[FieldTypeInfo, Resolver[F, JsValue]](mappingsFn)(annotatedRoot)
 
     // The root resolvers are applied with a singleton list containing an empty Json object
     // as the set of parents
     val containersAtRoot = Seq(Json.obj())
-    val dbio = rootResolver.resolveBatch.apply(containersAtRoot).map(_.head.as[JsObject])
-    dbio
+    rootResolver.resolveBatch.apply(containersAtRoot).map(_.head.as[JsObject])
   }
 
   /** Given a schema and a query represented as a Field tree, returns a new Field tree annotated with the
@@ -48,7 +45,7 @@ object Compiler {
     query.map(helper(None, _))
   }
 
-  private def toMappingFunction(mappings: QueryMappings): Field.Annotated[FieldTypeInfo] => Field[Resolver[JsValue]] => Resolver[JsValue] = {
+  private def toMappingFunction[F[_]](mappings: QueryMappings[F]): Field.Annotated[FieldTypeInfo] => Field[Resolver[F, JsValue]] => Resolver[F, JsValue] = {
     annotatedField => field =>
       val (typeInfo, fld) = Attr.un[Field, FieldTypeInfo](annotatedField)
       mappings((typeInfo, fld)).reducer(field)

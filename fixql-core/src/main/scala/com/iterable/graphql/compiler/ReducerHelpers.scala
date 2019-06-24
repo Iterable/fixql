@@ -1,27 +1,26 @@
 package com.iterable.graphql.compiler
 
+import cats.{Applicative, Traverse}
+import cats.implicits._
 import com.iterable.graphql.Field
 import com.iterable.graphql.compiler.FieldTypeInfo.ObjectField
 import graphql.introspection.Introspection
 import play.api.libs.json.JsString
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
-import slick.dbio.DBIO
-
-import scala.concurrent.ExecutionContext
 
 trait ReducerHelpers {
-  protected final def standardMappings(implicit ec: ExecutionContext): QueryMappings = {
-    rootMapping orElse introspectionMappings
+  protected final def standardMappings[F[_] : Applicative]: QueryMappings[F] = {
+    rootMapping[F] orElse introspectionMappings[F]
   }
 
   /** Resolves the overall query by sequencing all the top-level resolvers.
     */
-  protected final def rootMapping(implicit ec: ExecutionContext): QueryMappings = {
-    case (FieldTypeInfo(None, ""), Field("", _, _)) => QueryReducer { field: Field[Resolver[JsValue]] =>
+  protected final def rootMapping[F[_] : Applicative]: QueryMappings[F] = {
+    case (FieldTypeInfo(None, ""), Field("", _, _)) => QueryReducer { field: Field[Resolver[F, JsValue]] =>
       ResolverFn("") { containers =>
         for {
-          subfieldsValues <- DBIO.sequence(field.subfields.map { subfieldResolver =>
+          subfieldsValues <- Traverse[List].sequence(field.subfields.toList.map { subfieldResolver =>
             subfieldResolver.resolveBatch.apply(containers)
               .map(_.head) // "parallel array" with the containers, but since we're at the root, we should only have one element
               .map(v => subfieldResolver.jsonFieldName -> (v: Json.JsValueWrapper))
@@ -35,7 +34,7 @@ trait ReducerHelpers {
 
   /** Resolves queries for "__typename"
     */
-  protected final def introspectionMappings(implicit ec: ExecutionContext): QueryMappings = {
+  protected final def introspectionMappings[F[_] : Applicative]: QueryMappings[F] = {
     val TypeNameField = Introspection.TypeNameMetaFieldDef.getName
 
     {

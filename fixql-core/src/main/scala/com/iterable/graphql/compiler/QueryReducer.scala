@@ -1,23 +1,22 @@
 package com.iterable.graphql.compiler
 
+import cats._
+import cats.implicits._
 import com.iterable.graphql.Field
 import play.api.libs.json.JsArray
 import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import play.api.libs.json.Writes
-import slick.dbio.DBIO
-
-import scala.concurrent.ExecutionContext
 
 object QueryReducer {
-  def mapped[T](f: JsObject => T): QueryReducer[T] = QueryReducer[T] { field: Field[Resolver[JsValue]] =>
+  def mapped[F[_], T](f: JsObject => T)(implicit F: Applicative[F]): QueryReducer[F, T] = QueryReducer[F, T] { field: Field[Resolver[F, JsValue]] =>
     ResolverFn(field.name) { parents =>
-      DBIO.successful(parents.map(f))
+      F.pure(parents.map(f))
     }
   }
 
-  def topLevelArrayWithSubfields(dbio: => DBIO[Seq[JsObject]])(implicit ec: ExecutionContext): QueryReducer[JsArray] = {
+  def topLevelObjectsListWithSubfields[F[_] : Monad](dbio: => F[Seq[JsObject]]): QueryReducer[F, JsValue] = {
     jsObjects { _ =>
       dbio
     } // This is an "illegal" state since top-level must be a Seq with one element
@@ -25,13 +24,13 @@ object QueryReducer {
       .toTopLevelArray
   }
 
-  def jsObjects(f: Seq[JsObject] => DBIO[Seq[JsObject]]): QueryReducer[JsObject] = QueryReducer[JsObject] { field: Field[Resolver[JsValue]] =>
+  def jsObjects[F[_]](f: Seq[JsObject] => F[Seq[JsObject]]): QueryReducer[F, JsObject] = QueryReducer[F, JsObject] { field: Field[Resolver[F, JsValue]] =>
     ResolverFn(field.name) { parents =>
       f(parents)
     }
   }
 
-  def jsValues(f: Seq[JsObject] => DBIO[Seq[JsValue]]): QueryReducer[JsValue] = QueryReducer[JsValue] { field: Field[Resolver[JsValue]] =>
+  def jsValues[F[_]](f: Seq[JsObject] => F[Seq[JsValue]]): QueryReducer[F, JsValue] = QueryReducer[F, JsValue] { field: Field[Resolver[F, JsValue]] =>
     ResolverFn(field.name) { parents =>
       f(parents)
     }
@@ -42,15 +41,26 @@ object QueryReducer {
   * returned Resolver can depend on the (recursively generated) Resolvers for the subfields
   * of this field.
   */
-case class QueryReducer[+A](reducer: Field[Resolver[JsValue]] => Resolver[A]) {
-  def map[B](f: Seq[A] => Seq[B])(implicit ec: ExecutionContext): QueryReducer[B] = QueryReducer[B] { field =>
+case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
+  def as[B](implicit subJsValue: A <:< B, F: Functor[F]): QueryReducer[F, B] = {
+    map(x => x: B)
+  }
+
+  def map[B](f: A => B)(implicit F: Functor[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+    val resolved = reducer(field)
+    ResolverFn(resolved.jsonFieldName) { parents =>
+      resolved.resolveBatch(parents).map(_.map(f))
+    }
+  }
+
+  def mapBatch[B](f: Seq[A] => Seq[B])(implicit F: Functor[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).map(f)
     }
   }
 
-  def flatMap[B](f: Field[Resolver[JsValue]] => Seq[A] => DBIO[Seq[B]])(implicit ec: ExecutionContext): QueryReducer[B] = QueryReducer[B] { field =>
+  def flatMapBatch[B](f: Field[Resolver[F, JsValue]] => Seq[A] => F[Seq[B]])(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).flatMap(f(field))
@@ -61,20 +71,21 @@ case class QueryReducer[+A](reducer: Field[Resolver[JsValue]] => Resolver[A]) {
     * since Resolvers should always produce an output Seq that is parallel (and with the same size)
     * as the input Seq.
     */
-  def toTopLevelArray(implicit ec: ExecutionContext, writes: Writes[A]): QueryReducer[JsArray] = {
-    map { objs =>
+  def toTopLevelArray(implicit writes: Writes[A], F: Functor[F]): QueryReducer[F, JsValue] = {
+    mapBatch { objs =>
       Seq(JsArray(objs.map(writes.writes)))
     }
+      .as[JsValue]
   }
 
   /**
     * When this field is many-to-one from its parents, then this field's values just have
     * the type Seq[T] and can be directly passed into subfield resolvers and merged.
     */
-  def mergeResolveSubfields(implicit ec: ExecutionContext, jsobjs: A <:< JsObject): QueryReducer[JsObject] = {
-    flatMap { field => resolved =>
+  def mergeResolveSubfields(implicit jsobjs: A <:< JsObject, F: Monad[F]): QueryReducer[F, JsObject] = {
+    flatMapBatch { field => resolved =>
       for {
-        _ <- DBIO.successful(())
+        _ <- F.unit
         entityJsons = resolved.map(x => x: JsObject) // apply the implicit coercion from A <:< JsObject
         entityJsonsWithSubfieldsValues <- mergeResolveSubfields(entityJsons, field)
       } yield {
@@ -88,7 +99,7 @@ case class QueryReducer[+A](reducer: Field[Resolver[JsValue]] => Resolver[A]) {
     * type Seq[Seq[T]] and must be flattened before being passed into subfield resolvers,
     * then unflattened before being merged.
     */
-  def mergeResolveSubfieldsMany(implicit ec: ExecutionContext, subseqs: A <:< Seq[JsObject]) = QueryReducer[JsArray] { field =>
+  def mergeResolveSubfieldsMany(implicit subseqs: A <:< Seq[JsObject], F: Monad[F]) = QueryReducer[F, JsArray] { field =>
     val baseResolver = reducer(field)
     ResolverFn(baseResolver.jsonFieldName) { parents =>
       for {
@@ -102,12 +113,12 @@ case class QueryReducer[+A](reducer: Field[Resolver[JsValue]] => Resolver[A]) {
     }
   }
 
-  protected final def mergeResolveSubfields(entityJsons: Seq[JsObject], field: Field[Resolver[JsValue]])
-    (implicit ec: ExecutionContext): DBIO[Seq[JsObject]] = {
+  protected final def mergeResolveSubfields(entityJsons: Seq[JsObject], field: Field[Resolver[F, JsValue]])
+    (implicit F: Applicative[F]): F[Seq[JsObject]] = {
     for {
       // for each subfield, the value for all rows
-      subfieldsValues: Seq[Seq[(String, JsValue)]] <- DBIO.sequence(
-        field.subfields.map { subfield =>
+      subfieldsValues: Seq[Seq[(String, JsValue)]] <- Traverse[List].sequence(
+        field.subfields.toList.map { subfield =>
           subfield.resolveBatch.apply(entityJsons).map(_.map(subfield.jsonFieldName -> _))
         }
       )
