@@ -17,7 +17,7 @@ trait ReducerHelpers {
   /** Resolves the overall query by sequencing all the top-level resolvers.
     */
   protected final def rootMapping[F[_] : Applicative, T]: QueryMappings[F, T] = {
-    case (FieldTypeInfo(None, ""), Field("", _, _)) => QueryReducer { field: Field[Resolver[F, JsValue]] =>
+    case (FieldTypeInfo(None, ""), Field("", _, _)) => QueryReducer { field: Field[Resolver[F, T]] =>
       ResolverFn("") { containers =>
         for {
           subfieldsValues <- Traverse[List].sequence(field.subfields.toList.map { subfieldResolver =>

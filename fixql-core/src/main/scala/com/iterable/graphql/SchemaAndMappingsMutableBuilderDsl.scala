@@ -104,7 +104,7 @@ trait SchemaAndMappingsMutableBuilderDsl extends SchemaDsl {
   }
 
   implicit class FieldExtensions(field: GraphQLFieldDefinition) {
-    def ~>[F[_], T](reducer: QueryReducer[F, T])
+    def ~>[F[_], T](reducer: QueryReducer[F, T, T])
           (implicit builders: Builders[F, T], obj: GraphQLObjectType.Builder, mappings: MutableMappingsBuilder[F, T]) = {
       obj.field(field)
       val ObjectName = obj.build.getName
