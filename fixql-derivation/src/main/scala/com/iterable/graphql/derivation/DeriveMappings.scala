@@ -1,6 +1,6 @@
 package com.iterable.graphql.derivation
 
-import cats.Monad
+import cats.Applicative
 import com.iterable.graphql.compiler.FieldTypeInfo.ObjectField
 import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
 import play.api.libs.json.{JsNull, JsValue}
@@ -20,7 +20,7 @@ object DeriveMappings {
   def apply[T](typeName: String) = new Derive[T](typeName)
 
   class Derive[T](TypeName: String) extends SingletonProductArgs {
-    def allFields[F[_] : Monad, L <: HList, K <: HList]
+    def allFields[F[_] : Applicative, L <: HList, K <: HList]
     (implicit gen: LabelledGeneric.Aux[T, L],
      keys: Keys.Aux[L, K],
      set: ToTraversable.Aux[K, Set, Symbol]): QueryMappings[F] = {
@@ -32,7 +32,7 @@ object DeriveMappings {
       * customize anything about a field mapping, you should exclude the field
       * from automatic derivation and simply define the field's mapping explicitly.
       */
-    def fieldsProduct[F[_] : Monad, L <: HList, K <: HList, S <: HList]
+    def fieldsProduct[F[_] : Applicative, L <: HList, K <: HList, S <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      keys: Keys.Aux[L, K],
@@ -43,7 +43,7 @@ object DeriveMappings {
     }
   }
 
-  private def fieldMappings[F[_] : Monad](TypeName: String, fieldNames: Set[String]) = {
+  private def fieldMappings[F[_] : Applicative](TypeName: String, fieldNames: Set[String]) = {
     ({ case ObjectField(TypeName, fieldName) if fieldNames.contains(fieldName) =>
       QueryReducer.mapped { parent =>
         // If the parent has defined this field as an Option, then Json serialization

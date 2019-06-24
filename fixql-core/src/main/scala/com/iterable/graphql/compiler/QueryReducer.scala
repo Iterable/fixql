@@ -10,7 +10,7 @@ import play.api.libs.json.Json
 import play.api.libs.json.Writes
 
 object QueryReducer {
-  def mapped[F[_], T](f: JsObject => T)(implicit F: Monad[F]): QueryReducer[F, T] = QueryReducer[F, T] { field: Field[Resolver[F, JsValue]] =>
+  def mapped[F[_], T](f: JsObject => T)(implicit F: Applicative[F]): QueryReducer[F, T] = QueryReducer[F, T] { field: Field[Resolver[F, JsValue]] =>
     ResolverFn(field.name) { parents =>
       F.pure(parents.map(f))
     }
@@ -42,18 +42,18 @@ object QueryReducer {
   * of this field.
   */
 case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
-  def asJsValue(implicit subJsValue: A <:< JsValue, F: Monad[F]): QueryReducer[F, JsValue] = {
+  def asJsValue(implicit subJsValue: A <:< JsValue, F: Functor[F]): QueryReducer[F, JsValue] = {
     map(x => x: JsValue)
   }
 
-  def map[B](f: A => B)(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+  def map[B](f: A => B)(implicit F: Functor[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).map(_.map(f))
     }
   }
 
-  def mapBatch[B](f: Seq[A] => Seq[B])(implicit F: Monad[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
+  def mapBatch[B](f: Seq[A] => Seq[B])(implicit F: Functor[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
     val resolved = reducer(field)
     ResolverFn(resolved.jsonFieldName) { parents =>
       resolved.resolveBatch(parents).map(f)
@@ -71,7 +71,7 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
     * since Resolvers should always produce an output Seq that is parallel (and with the same size)
     * as the input Seq.
     */
-  def toTopLevelArray(implicit writes: Writes[A], F: Monad[F]): QueryReducer[F, JsValue] = {
+  def toTopLevelArray(implicit writes: Writes[A], F: Functor[F]): QueryReducer[F, JsValue] = {
     mapBatch { objs =>
       Seq(JsArray(objs.map(writes.writes)))
     }
@@ -83,7 +83,7 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
     * the type Seq[T] and can be directly passed into subfield resolvers and merged.
     */
   def mergeResolveSubfields(implicit jsobjs: A <:< JsObject, F: Monad[F]): QueryReducer[F, JsObject] = {
-    flatMapBatch { field =>resolved =>
+    flatMapBatch { field => resolved =>
       for {
         _ <- F.unit
         entityJsons = resolved.map(x => x: JsObject) // apply the implicit coercion from A <:< JsObject
@@ -114,7 +114,7 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
   }
 
   protected final def mergeResolveSubfields(entityJsons: Seq[JsObject], field: Field[Resolver[F, JsValue]])
-    (implicit F: Monad[F]): F[Seq[JsObject]] = {
+    (implicit F: Applicative[F]): F[Seq[JsObject]] = {
     for {
       // for each subfield, the value for all rows
       subfieldsValues: Seq[Seq[(String, JsValue)]] <- Traverse[List].sequence(

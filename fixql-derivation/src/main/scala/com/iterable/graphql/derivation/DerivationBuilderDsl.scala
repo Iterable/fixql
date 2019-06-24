@@ -1,6 +1,6 @@
 package com.iterable.graphql.derivation
 
-import cats.Monad
+import cats.Applicative
 import com.iterable.graphql.{MutableMappingsBuilder, SchemaAndMappingsMutableBuilderDsl}
 import graphql.schema.{GraphQLObjectType, GraphQLOutputType}
 import shapeless.ops.hlist
@@ -20,7 +20,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
   }
 
   class AddDerived[T](name: String)(implicit obj: GraphQLObjectType.Builder) extends SingletonProductArgs {
-    def fieldsAndMappingsProduct[F[_] : Monad, L <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList, K <: HList]
+    def fieldsAndMappingsProduct[F[_] : Applicative, L <: HList, MV <: HList, S <: HList, V <: HList, L2 <: HList, K <: HList]
     (selections: S)
     (implicit gen: LabelledGeneric.Aux[T, L],
      select: SelectAll.Aux[L, S, V],
@@ -49,7 +49,7 @@ trait DerivationBuilderDsl extends SchemaAndMappingsMutableBuilderDsl {
       obj.fields(derived.getFieldDefinitions)
     }
 
-    def mappingsProduct[F[_] : Monad, L <: HList, K <: HList, S <: HList]
+    def mappingsProduct[F[_] : Applicative, L <: HList, K <: HList, S <: HList]
     (selections: S)
     (implicit mappings: MutableMappingsBuilder[F],
      gen: LabelledGeneric.Aux[T, L],
