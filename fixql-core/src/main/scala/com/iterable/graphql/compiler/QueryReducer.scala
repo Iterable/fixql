@@ -42,8 +42,8 @@ object QueryReducer {
   * of this field.
   */
 case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolver[F, A]) {
-  def asJsValue(implicit subJsValue: A <:< JsValue, F: Functor[F]): QueryReducer[F, JsValue] = {
-    map(x => x: JsValue)
+  def as[B](implicit subJsValue: A <:< B, F: Functor[F]): QueryReducer[F, B] = {
+    map(x => x: B)
   }
 
   def map[B](f: A => B)(implicit F: Functor[F]): QueryReducer[F, B] = QueryReducer[F, B] { field =>
@@ -75,7 +75,7 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
     mapBatch { objs =>
       Seq(JsArray(objs.map(writes.writes)))
     }
-      .asJsValue
+      .as[JsValue]
   }
 
   /**
