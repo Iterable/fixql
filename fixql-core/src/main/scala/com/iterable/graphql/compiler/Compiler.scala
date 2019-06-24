@@ -16,18 +16,18 @@ object Compiler {
     * generates the root resolver, then runs it.
     * @return an object of the query type
     */
-  def compile[F[_] : Functor](schema: Schema, query: Query[Field.Fixed], mappings: QueryMappings[F]): F[JsObject] = {
+  def compile[F[_] : Functor, T](schema: Schema, query: Query[Field.Fixed], mappings: QueryMappings[F, T]): F[T] = {
     val annotated: Query[Field.Annotated[FieldTypeInfo]] = annotateWithTypeInfo(schema, query)
 
     val mappingsFn = toMappingFunction(mappings)
 
     val annotatedRoot: Field.Annotated[FieldTypeInfo] = Attr(FieldTypeInfo(None, "") -> annotated.fieldTreeRoot)
-    val rootResolver = annotatedFold[FieldTypeInfo, Resolver[F, JsValue]](mappingsFn)(annotatedRoot)
+    val rootResolver = annotatedFold[FieldTypeInfo, Resolver[F, T]](mappingsFn)(annotatedRoot)
 
     // The root resolvers are applied with a singleton list containing an empty Json object
     // as the set of parents
     val containersAtRoot = Seq(Json.obj())
-    rootResolver.resolveBatch.apply(containersAtRoot).map(_.head.as[JsObject])
+    rootResolver.resolveBatch.apply(containersAtRoot).map(_.head)
   }
 
   /** Given a schema and a query represented as a Field tree, returns a new Field tree annotated with the
@@ -45,7 +45,7 @@ object Compiler {
     query.map(helper(None, _))
   }
 
-  private def toMappingFunction[F[_]](mappings: QueryMappings[F]): Field.Annotated[FieldTypeInfo] => Field[Resolver[F, JsValue]] => Resolver[F, JsValue] = {
+  private def toMappingFunction[F[_], T](mappings: QueryMappings[F, T]): Field.Annotated[FieldTypeInfo] => Field[Resolver[F, T]] => Resolver[F, T] = {
     annotatedField => field =>
       val (typeInfo, fld) = Attr.un[Field, FieldTypeInfo](annotatedField)
       mappings((typeInfo, fld)).reducer(field)
