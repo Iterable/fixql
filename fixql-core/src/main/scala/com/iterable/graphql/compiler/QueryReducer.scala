@@ -89,7 +89,7 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
         entityJsons = resolved.map(x => x: JsObject) // apply the implicit coercion from A <:< JsObject
         entityJsonsWithSubfieldsValues <- mergeResolveSubfields(entityJsons, field)
       } yield {
-        entityJsonsWithSubfieldsValues: Seq[JsObject]
+        entityJsonsWithSubfieldsValues
       }
     }
   }
