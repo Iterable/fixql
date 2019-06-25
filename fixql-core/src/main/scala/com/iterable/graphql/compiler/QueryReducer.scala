@@ -3,10 +3,10 @@ package com.iterable.graphql.compiler
 import cats._
 import cats.implicits._
 import com.iterable.graphql.Field
+import org.typelevel.jawn.SimpleFacade
 import play.api.libs.json.JsArray
 import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue
-import play.api.libs.json.Json
 import play.api.libs.json.Writes
 
 object QueryReducer {
@@ -16,7 +16,7 @@ object QueryReducer {
     }
   }
 
-  def topLevelObjectsListWithSubfields[F[_] : Monad, T](dbio: => F[Seq[JsObject]]): QueryReducer[F, T, JsValue] = {
+  def topLevelObjectsListWithSubfields[F[_] : Monad, T : SimpleFacade](dbio: => F[Seq[JsObject]]): QueryReducer[F, T, JsValue] = {
     jsObjects { _ =>
       dbio
     } // This is an "illegal" state since top-level must be a Seq with one element
@@ -82,7 +82,7 @@ case class QueryReducer[F[_], T, A](reducer: Field[Resolver[F, T]] => Resolver[F
     * When this field is many-to-one from its parents, then this field's values just have
     * the type Seq[T] and can be directly passed into subfield resolvers and merged.
     */
-  def mergeResolveSubfields(implicit jsobjs: A <:< JsObject, F: Monad[F]): QueryReducer[F, T, JsObject] = {
+  def mergeResolveSubfields(implicit jsobjs: A <:< JsObject, F: Monad[F], JSON: SimpleFacade[T]): QueryReducer[F, T, T] = {
     flatMapBatch { field => resolved =>
       for {
         _ <- F.unit
@@ -99,7 +99,7 @@ case class QueryReducer[F[_], T, A](reducer: Field[Resolver[F, T]] => Resolver[F
     * type Seq[Seq[T]] and must be flattened before being passed into subfield resolvers,
     * then unflattened before being merged.
     */
-  def mergeResolveSubfieldsMany(implicit subseqs: A <:< Seq[JsObject], F: Monad[F]) = QueryReducer[F, T, JsArray] { field =>
+  def mergeResolveSubfieldsMany(implicit subseqs: A <:< Seq[JsObject], F: Monad[F], JSON: SimpleFacade[T]) = QueryReducer[F, T, JsArray] { field =>
     val baseResolver = reducer(field)
     ResolverFn(baseResolver.jsonFieldName) { parents =>
       for {
@@ -113,11 +113,11 @@ case class QueryReducer[F[_], T, A](reducer: Field[Resolver[F, T]] => Resolver[F
     }
   }
 
-  protected final def doMergeResolveSubfields(entityJsons: Seq[JsObject], field: Field[Resolver[F, JsValue]])
-    (implicit F: Applicative[F]): F[Seq[JsObject]] = {
+  protected final def doMergeResolveSubfields(entityJsons: Seq[JsObject], field: Field[Resolver[F, T]])
+    (implicit F: Applicative[F], JSON: SimpleFacade[T]): F[Seq[T]] = {
     for {
       // for each subfield, the value for all rows
-      subfieldsValues: Seq[Seq[(String, JsValue)]] <- Traverse[List].sequence(
+      subfieldsValues: Seq[Seq[(String, T)]] <- Traverse[List].sequence(
         field.subfields.toList.map { subfield =>
           subfield.resolveBatch.apply(entityJsons).map(_.map(subfield.jsonFieldName -> _))
         }
@@ -131,12 +131,13 @@ case class QueryReducer[F[_], T, A](reducer: Field[Resolver[F, T]] => Resolver[F
         * over a new column of values, we merge it into the accumulated column of Json
         * objects.
         */
-      val emptyJsons = Seq.fill(entityJsons.size)(Json.obj())
-      subfieldsValues.foldLeft(emptyJsons) { (entityJsons, subfieldValues) =>
+      val emptyJsons = Seq.fill(entityJsons.size)(Map.empty[String, T])
+      val mergedJsons = subfieldsValues.foldLeft(emptyJsons) { (entityJsons, subfieldValues) =>
         (entityJsons zip subfieldValues).map { case (entityJson, subfieldValue) =>
           entityJson + subfieldValue
         }
       }
+      mergedJsons.map(JSON.jobject)
     }
   }
 
