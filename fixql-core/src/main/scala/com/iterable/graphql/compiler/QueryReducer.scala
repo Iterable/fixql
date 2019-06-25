@@ -16,7 +16,7 @@ object QueryReducer {
     }
   }
 
-  def topLevelObjectsListWithSubfields[F[_] : Monad, T : SimpleFacade](dbio: => F[Seq[JsObject]]): QueryReducer[F, T, JsValue] = {
+  def topLevelObjectsListWithSubfields[F[_] : Monad, T : SimpleFacade](dbio: => F[Seq[JsObject]]): QueryReducer[F, T, T] = {
     jsObjects { _ =>
       dbio
     } // This is an "illegal" state since top-level must be a Seq with one element
@@ -71,11 +71,10 @@ case class QueryReducer[F[_], T, A](reducer: Field[Resolver[F, T]] => Resolver[F
     * since Resolvers should always produce an output Seq that is parallel (and with the same size)
     * as the input Seq.
     */
-  def toTopLevelArray(implicit writes: Writes[A], F: Functor[F]): QueryReducer[F, T, JsValue] = {
+  def toTopLevelArray(implicit F: Functor[F], JSON: SimpleFacade[T], sub: A <:< T): QueryReducer[F, T, T] = {
     mapBatch { objs =>
-      Seq(JsArray(objs.map(writes.writes)))
+      Seq(JSON.jarray(objs.map(x => x: T).toList))
     }
-      .as[JsValue]
   }
 
   /**
