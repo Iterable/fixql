@@ -98,7 +98,7 @@ case class QueryReducer[F[_], T, A](reducer: Field[Resolver[F, T]] => Resolver[F
     * type Seq[Seq[T]] and must be flattened before being passed into subfield resolvers,
     * then unflattened before being merged.
     */
-  def mergeResolveSubfieldsMany(implicit subseqs: A <:< Seq[JsObject], F: Monad[F], JSON: SimpleFacade[T]) = QueryReducer[F, T, JsArray] { field =>
+  def mergeResolveSubfieldsMany(implicit subseqs: A <:< Seq[JsObject], F: Monad[F], JSON: SimpleFacade[T]) = QueryReducer[F, T, T] { field =>
     val baseResolver = reducer(field)
     ResolverFn(baseResolver.jsonFieldName) { parents =>
       for {
@@ -107,7 +107,7 @@ case class QueryReducer[F[_], T, A](reducer: Field[Resolver[F, T]] => Resolver[F
         allEntitiesWithSubfieldsValues <- doMergeResolveSubfields(allEntities, field)
         mergedEntitiesByParent = reverseFlatten(entitiesByParent, allEntitiesWithSubfieldsValues)
       } yield {
-        mergedEntitiesByParent.map(JsArray(_))
+        mergedEntitiesByParent.map(xs => JSON.jarray(xs.toList))
       }
     }
   }
