@@ -130,6 +130,8 @@ See [DerivationSpec] for a more complete usage example.
 
 TBD: Monads. Optimization. Type Safety. Arguments. Fragments. Runtime polymorphism.
 
+This project supports the [Scala code of conduct][coc] and hopes to build a welcoming, inclusive community of people excited about GraphQL and Scala!
+
 [GraphQL-Java]: https://www.graphql-java.com/
 [droste]: https://github.com/higherkindness/droste
 [pfeil-recursion-schemes]: https://github.com/sellout/recursion-scheme-talk/blob/master/nanopass-compiler-talk.org
@@ -137,3 +139,4 @@ TBD: Monads. Optimization. Type Safety. Arguments. Fragments. Runtime polymorphi
 [GraphQLSchema]: https://www.graphql-java.com/documentation/v12/schema/
 [BuilderDslSpec]: https://github.com/Iterable/fixql/blob/master/fixql-core/src/test/scala/com/iterable/graphql/BuilderDslSpec.scala
 [DerivationSpec]: https://github.com/Iterable/fixql/blob/master/fixql-derivation/src/test/scala/com/iterable/graphql/derivation/DerivationSpec.scala
+[coc]: https://www.scala-lang.org/conduct/
