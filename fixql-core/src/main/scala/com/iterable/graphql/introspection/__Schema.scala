@@ -12,13 +12,9 @@ case class __Schema(
   directives: Seq[__Directive] = Nil,
 )
 
-object __Schema {
-  implicit val writes: OWrites[__Schema] = Json.writes[__Schema]
-}
-
 case class __Type(
   kind: Enums.__TypeKind,
-  name: String, // introspection schema says this is optional
+  name: Option[String],
   description: Option[String],
   fields: Seq[__Field] = Nil,
   interfaces: Seq[__Type] = Nil,
@@ -28,44 +24,28 @@ case class __Type(
   ofType: Option[__Type] = None,
 )
 
-object __Type {
-  implicit val writes: OWrites[__Type] = Json.writes[__Type]
-}
-
 case class  __Field(
   name: String,
   description: Option[String],
   args: Seq[__InputValue] = Nil,
-  `type`: __Type,
+  typeName: String, // TODO
   isDeprecated: Boolean = false,
   deprecationReason: Option[String] = None,
 )
 
-object __Field  {
-  implicit val writes: OWrites[__Field] = Json.writes[__Field]
-}
-
 case class  __InputValue(
   name: String,
   description: Option[String] = None,
-  `type`: __Type,
+  typeName: String, // TODO
   defaultValue: Option[String] = None,
 )
 
-object __InputValue {
-  implicit val writes: OWrites[__InputValue] = Json.writes[__InputValue]
-}
-
 case class __EnumValue(
-  name:  String,
+  name: String,
   description: Option[String],
   isDeprecated: Boolean,
   deprecationReason: Option[String],
 )
-
-object __EnumValue {
-  implicit val writes: OWrites[__EnumValue] = Json.writes[__EnumValue]
-}
 
 // TBD
 object Enums {
@@ -79,7 +59,3 @@ case class __Directive(
   locations: Seq[Enums.__DirectiveLocation] = Nil,
   args: Seq[__InputValue] = Nil,
 )
-
-object __Directive {
-  implicit val writes: OWrites[__Directive] = Json.writes[__Directive]
-}

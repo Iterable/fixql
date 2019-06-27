@@ -143,10 +143,10 @@ object FromGraphQLJava {
     graphQLSchema
   }
 
-  def toSchemaFunction(schema: GraphQLSchema): Schema = new Schema {
+  def toSchemaFunction(schema: GraphQLSchema, includeTypeNameMetaField: Boolean = true, includeTopLevelSchemaMetaFields: Boolean = false): Schema = new Schema {
     override def getUnwrappedTypeNameOf(parentTypeName: Option[String], fieldName: String) = {
       // TODO: there should be a better way to handle this. Maybe using TraversalContext.getFieldDef
-      if (fieldName == Introspection.TypeNameMetaFieldDef.getName) {
+      if (includeTypeNameMetaField && fieldName == Introspection.TypeNameMetaFieldDef.getName) {
         // This doesn't really matter today since we don't currently do anything with Scalars
         // it's defined as nonNull(GraphQLString)
         GraphQLTypeUtil.unwrapAll(Introspection.TypeNameMetaFieldDef.getType).getName
@@ -158,7 +158,13 @@ object FromGraphQLJava {
             val fieldDefn = Option(parentType.getFieldDefinition(fieldName)).getOrElse(throw new NoSuchElementException(parentEntityName + " " + fieldName))
             fieldDefn.getType
           }.getOrElse {
-            schema.getQueryType.getFieldDefinition(fieldName).getType
+            if (includeTopLevelSchemaMetaFields && fieldName == Introspection.SchemaMetaFieldDef.getName) {
+              Introspection.__Schema
+            } else if (includeTopLevelSchemaMetaFields && fieldName == Introspection.TypeMetaFieldDef) {
+              Introspection.__Type
+            } else {
+              Option(schema.getQueryType.getFieldDefinition(fieldName)).map(_.getType).getOrElse(throw new NoSuchElementException(fieldName))
+            }
           }
         GraphQLTypeUtil.unwrapAll(fieldType).getName
       }

@@ -4,7 +4,7 @@ import cats.Monad
 import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
 import graphql.introspection.Introspection
-import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLSchema, GraphQLType}
+import graphql.schema.{GraphQLEnumType, GraphQLFieldDefinition, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLType}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
@@ -12,7 +12,7 @@ import scala.collection.JavaConverters.setAsJavaSetConverter
 
 class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
 
-  def newSchemaAndMappings[F[_] : Monad](existingMappings: QueryMappings[F]) = {
+  def newSchemaAndMappings[F[_] : Monad](existingMappings: QueryMappings[F]): (GraphQLSchema, QueryMappings[F]) = {
     (GraphQLSchema.newSchema(graphqlSchema)
       .additionalTypes(Set[GraphQLType](Introspection.__Schema).asJava)
       .build, existingMappings orElse introspectionMappings)
@@ -25,8 +25,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
         .mergeResolveSubfields
         .as[JsValue]
     case ObjectField("__Schema", "types") => QueryReducer.jsObjects[F] { _ =>
-      F.pure(allTypes
-        .map(Json.toJson(_).as[JsObject]))
+      F.pure(allTypes.map(Json.toJson(_).as[JsObject]))
     }
       .mergeResolveSubfields
       .toTopLevelArray
@@ -47,13 +46,25 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
   def allTypes: Seq[__Type] = {
     graphqlSchema.getAllTypesAsList.asScala.map {
       case obj: GraphQLObjectType => mkType(obj)
+      case scalar: GraphQLScalarType =>
+        __Type(
+          kind = "SCALAR",
+          name = Option(scalar.getName),
+          description = Option(scalar.getDescription),
+        )
+      case enum: GraphQLEnumType =>
+        __Type(
+          kind = "ENUM",
+          name = Option(enum.getName),
+          description = Option(enum.getDescription),
+        )
     }.toSeq
   }
 
   def mkType(obj: GraphQLObjectType) = {
     __Type(
       kind = "OBJECT",
-      name = obj.getName,
+      name = Option(obj.getName),
       description = Option(obj.getDescription),
       fields = mkFields(obj.getFieldDefinitions.asScala.toSeq),
     )
@@ -65,7 +76,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
         name = field.getName,
         description = Option(field.getDescription),
         args = Nil,
-        `type` = ???,
+        typeName = "", // TODO
         isDeprecated = field.isDeprecated,
         deprecationReason = Option(field.getDeprecationReason),
       )
