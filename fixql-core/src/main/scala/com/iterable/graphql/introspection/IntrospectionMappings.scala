@@ -1,24 +1,32 @@
 package com.iterable.graphql.introspection
 
-import cats.Id
+import cats.Monad
 import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
-import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLSchema}
+import graphql.introspection.Introspection
+import graphql.schema.{GraphQLFieldDefinition, GraphQLObjectType, GraphQLSchema, GraphQLType}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.collection.JavaConverters.setAsJavaSetConverter
 
 class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
 
-  def mappings: QueryMappings[Id] = {
-    case TopLevelField("__schema") => QueryReducer.jsObjects[Id] { _ =>
-      Seq(Json.toJson(schema).as[JsObject])
+  def newSchemaAndMappings[F[_] : Monad](existingMappings: QueryMappings[F]) = {
+    (GraphQLSchema.newSchema(graphqlSchema)
+      .additionalTypes(Set[GraphQLType](Introspection.__Schema).asJava)
+      .build, existingMappings orElse introspectionMappings)
+  }
+
+  def introspectionMappings[F[_]](implicit F: Monad[F]): QueryMappings[F] = {
+    case TopLevelField("__schema") => QueryReducer.jsObjects[F] { _ =>
+      F.pure(Seq(Json.toJson(schema).as[JsObject]))
     }
         .mergeResolveSubfields
         .as[JsValue]
-    case ObjectField("__Schema", "types") => QueryReducer.jsObjects[Id] { _ =>
-      allTypes
-        .map(Json.toJson(_).as[JsObject])
+    case ObjectField("__Schema", "types") => QueryReducer.jsObjects[F] { _ =>
+      F.pure(allTypes
+        .map(Json.toJson(_).as[JsObject]))
     }
       .mergeResolveSubfields
       .toTopLevelArray
