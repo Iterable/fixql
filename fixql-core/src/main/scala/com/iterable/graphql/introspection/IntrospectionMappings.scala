@@ -5,7 +5,7 @@ import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
 import graphql.introspection.Introspection
 import graphql.schema.{GraphQLEnumType, GraphQLFieldDefinition, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLType}
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.JavaConverters.setAsJavaSetConverter
@@ -38,6 +38,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     case ObjectField("__Type", "name") => QueryReducer.mapped(_("name"))
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(_("description"))
     case ObjectField("__Type", "fields") => QueryReducer.mapped(_("fields"))
+    case ObjectField("__Schema", _) => QueryReducer.jsValues[F] { _ => F.pure(Seq(JsNull)) }.toTopLevelArray
   }
 
   def schema = {
