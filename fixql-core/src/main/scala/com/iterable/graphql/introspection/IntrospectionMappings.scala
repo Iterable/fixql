@@ -27,8 +27,13 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     case ObjectField("__Schema", "types") => QueryReducer.jsObjects[F] { _ =>
       F.pure(allTypes.map(Json.toJson(_).as[JsObject]))
     }
-      .mergeResolveSubfields
-      .toTopLevelArray
+        .mergeResolveSubfields
+        .toTopLevelArray
+    case ObjectField("__Schema", "queryType") => QueryReducer.jsObjects[F] { _ =>
+      F.pure(Seq(Json.toJson(mkType(graphqlSchema.getQueryType)).as[JsObject]))
+    }
+        .mergeResolveSubfields
+        .toTopLevelArray
     case ObjectField("__Type", "kind") => QueryReducer.mapped(_("kind"))
     case ObjectField("__Type", "name") => QueryReducer.mapped(_("name"))
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(_("description"))
