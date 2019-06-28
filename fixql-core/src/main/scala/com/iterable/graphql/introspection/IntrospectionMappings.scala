@@ -42,6 +42,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     case ObjectField("__Type", _) => QueryReducer.jsValues[F] { _ => F.pure(Seq(JsNull)) }.toTopLevelArray
     case ObjectField("__Field", fieldName) => QueryReducer.mapped(_(fieldName))
     case ObjectField("__InputValue", fieldName) => QueryReducer.mapped(_(fieldName))
+    case ObjectField("__EnumValue", fieldName) => QueryReducer.mapped(_(fieldName)) //o => (o \ fieldName).asOpt[JsValue].getOrElse(JsNull))
   }
 
   def schema = {
