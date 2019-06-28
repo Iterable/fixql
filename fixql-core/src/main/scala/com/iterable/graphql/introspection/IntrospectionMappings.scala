@@ -34,11 +34,12 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     }
         .mergeResolveSubfields
         .toTopLevelArray
+    case ObjectField("__Schema", _) => QueryReducer.jsValues[F] { _ => F.pure(Seq(JsNull)) }.toTopLevelArray
     case ObjectField("__Type", "kind") => QueryReducer.mapped(_("kind"))
     case ObjectField("__Type", "name") => QueryReducer.mapped(_("name"))
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(_("description"))
     case ObjectField("__Type", "fields") => QueryReducer.mapped(_("fields"))
-    case ObjectField("__Schema", _) => QueryReducer.jsValues[F] { _ => F.pure(Seq(JsNull)) }.toTopLevelArray
+    case ObjectField("__Field", "name") => QueryReducer.mapped(_("name"))
   }
 
   def schema = {
