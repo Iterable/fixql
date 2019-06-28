@@ -40,6 +40,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(_("description"))
     case ObjectField("__Type", "fields") => QueryReducer.mapped(_("fields"))
     case ObjectField("__Field", fieldName) => QueryReducer.mapped(_(fieldName))
+    case ObjectField("__InputValue", fieldName) => QueryReducer.mapped(_(fieldName))
   }
 
   def schema = {
