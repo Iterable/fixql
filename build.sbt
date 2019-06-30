@@ -36,6 +36,8 @@ lazy val core = Project("fixql-core", file("fixql-core"))
     "io.circe" %% "circe-optics" % "0.9.3",
 
     "com.typesafe.play" %% "play-json" % "2.7.1",
+    "org.typelevel" %% "jawn-parser" % "0.14.2",
+    "org.typelevel" %% "jawn-play" % "0.14.2" % Test,
   ))
   .settings(addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0"))
 
