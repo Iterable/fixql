@@ -36,7 +36,7 @@ class MutableMappingsBuilder[F[_], T] {
   *
   * @tparam T useful to return a value (e.g. an object type) from this definition block
   */
-case class WithBuilders[F[_], T](mutate: Builders[F, T] => T) {
+case class WithBuilders[F[_], T, A](mutate: Builders[F, T] => A) {
 
   /** Includes our field and mapping definitions in the current context. Example:
     *

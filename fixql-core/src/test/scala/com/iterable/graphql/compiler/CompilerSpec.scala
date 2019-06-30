@@ -5,9 +5,12 @@ import com.iterable.graphql.FromGraphQLJava.parseSchema
 import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.{CharacterRepo, Field, FromGraphQLJava, Query, StarWarsSchema}
 import org.scalatest.{FlatSpec, Matchers}
-import play.api.libs.json.{JsArray, JsObject, Json}
+import org.typelevel.jawn.SimpleFacade
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
 class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with ReducerHelpers {
+
+  implicit val simpleFacade: SimpleFacade[JsValue] = org.typelevel.jawn.support.play.Parser.facade.asInstanceOf[SimpleFacade[JsValue]]
 
   "Compiler" should "compile" in {
     val graphQLSchema = parseSchema(starWarsSchema)
@@ -15,15 +18,15 @@ class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with Reduc
     val repo = new CharacterRepo
 
     val resolvers = ({
-      case TopLevelField("humans") => QueryReducer.topLevelObjectsListWithSubfields[Id] {
+      case TopLevelField("humans") => QueryReducer.topLevelObjectsListWithSubfields[Id, JsValue] {
         repo.getHumans(1000, 0).map(Json.toJson(_).as[JsObject])
       }
-      case TopLevelField("droids") => QueryReducer.topLevelObjectsListWithSubfields[Id] {
+      case TopLevelField("droids") => QueryReducer.topLevelObjectsListWithSubfields[Id, JsValue] {
         repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject])
       }
       case ObjectField("Human", "id") => QueryReducer.mapped(_("id"))
       case ObjectField("Human", "name") => QueryReducer.mapped(_("name"))
-    }: QueryMappings[Id]).orElse(rootMapping)
+    }: QueryMappings[Id, JsValue]).orElse(rootMapping)
 
     import qq.droste.syntax.fix._
     val query: Query[Field.Fixed] =

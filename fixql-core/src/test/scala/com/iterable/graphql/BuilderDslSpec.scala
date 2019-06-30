@@ -1,18 +1,22 @@
 package com.iterable.graphql
 
 import cats.Id
-import com.iterable.graphql.compiler.{Compiler, QueryMappings, QueryReducer, ReducerHelpers}
+import com.iterable.graphql.compiler.{Compiler, QueryMappings, QueryReducer, QueryReducerHelpers, ReducerHelpers}
 import graphql.Scalars._
 import graphql.schema.idl.SchemaPrinter
 import graphql.schema.{GraphQLObjectType, GraphQLSchema, GraphQLType}
 import org.scalatest.{FlatSpec, Matchers}
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import org.typelevel.jawn.SimpleFacade
 
-class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl with SchemaDsl with ReducerHelpers with Matchers {
+class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl with SchemaDsl
+  with ReducerHelpers with QueryReducerHelpers[JsValue] with Matchers {
 
   private val repo = new CharacterRepo
 
-  def buildSchemaAndMappings: (GraphQLSchema, QueryMappings[Id]) = {
+  implicit val simpleFacade: SimpleFacade[JsValue] = org.typelevel.jawn.support.play.Parser.facade.asInstanceOf[SimpleFacade[JsValue]]
+
+  def buildSchemaAndMappings: (GraphQLSchema, QueryMappings[Id, JsValue]) = {
     schemaAndMappings { implicit builders =>
       // We have a circular reference between Droid and Human so we need to use type references
       val droidTypeRef = typeRef("Droid")
@@ -20,13 +24,13 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
       humanMappings(droidTypeRef).include
       droidMappings(humanTypeRef).include
 
-      addMappings(standardMappings)
+      addMappings(standardMappings[Id, JsValue])
     }
   }
 
-  def humanMappings(droidType: GraphQLType) = WithBuilders[Id, GraphQLObjectType] { implicit builder =>
+  def humanMappings(droidType: GraphQLType) = WithBuilders[Id, JsValue, GraphQLObjectType] { implicit builder =>
     withQueryType { implicit obj =>
-      field("humans", list(humanType)) ~> QueryReducer.topLevelObjectsListWithSubfields[Id] {
+      field("humans", list(humanType)) ~> QueryReducer.topLevelObjectsListWithSubfields[Id, JsValue] {
         repo.getHumans(1000, 0).map(Json.toJson(_).as[JsObject])
       }
     }
@@ -35,17 +39,17 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
     lazy val humanType = objectType("Human") { implicit obj =>
       field("id", nonNull(GraphQLID)) ~> QueryReducer.mapped(_("id"))
       field("name", nonNull(GraphQLString)) ~> QueryReducer.mapped(_("name"))
-      field("friends", list(droidType)) ~> QueryReducer.mapped {_ =>
+      field("friends", list(droidType)) ~> mapped { _ =>
         JsArray(repo.getDroids(1000, 0).map(Json.toJson(_)))
-      }
+      }.as[JsValue]
       field("homePlanet", GraphQLString) ~> QueryReducer.mapped(_("homePlanet"))
     }
     humanType
   }
 
-  def droidMappings(humanType: GraphQLType) = WithBuilders[Id, GraphQLObjectType] { implicit builder =>
+  def droidMappings(humanType: GraphQLType) = WithBuilders[Id, JsValue, GraphQLObjectType] { implicit builder =>
     withQueryType { implicit obj =>
-      field("droids", list(droidType)) ~> QueryReducer.topLevelObjectsListWithSubfields[Id] {
+      field("droids", list(droidType)) ~> QueryReducer.topLevelObjectsListWithSubfields[Id, JsValue] {
         repo.getDroids(1000, 0).map(Json.toJson(_).as[JsObject])
       }
     }
@@ -53,9 +57,9 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
     lazy val droidType = objectType("Droid") { implicit obj =>
       field("id", nonNull(GraphQLID)) ~> QueryReducer.mapped(_("id"))
       field("name", nonNull(GraphQLString)) ~> QueryReducer.mapped(_("name"))
-      field("friends", list(humanType)) ~> QueryReducer.mapped { _ =>
+      field("friends", list(humanType)) ~> mapped { _ =>
         JsArray(repo.getHumans(1000, 0).map(Json.toJson(_)))
-      }
+      }.as[JsValue]
       field("primaryFunction", GraphQLString) ~> QueryReducer.mapped(_("primaryFunction"))
     }
     droidType
