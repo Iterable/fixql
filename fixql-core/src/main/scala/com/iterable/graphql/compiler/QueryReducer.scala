@@ -119,7 +119,16 @@ case class QueryReducer[F[_], A](reducer: Field[Resolver[F, JsValue]] => Resolve
       // for each subfield, the value for all rows
       subfieldsValues: Seq[Seq[(String, JsValue)]] <- Traverse[List].sequence(
         field.subfields.toList.map { subfield =>
-          subfield.resolveBatch.apply(entityJsons).map(_.map(subfield.jsonFieldName -> _))
+          subfield.resolveBatch.apply(entityJsons)
+            .map(_.map(subfield.jsonFieldName -> _))
+            .map { subfieldJsons =>
+              if (subfieldJsons.size != entityJsons.size) {
+                // TODO: put this somewhere where all invocations of resolveBatch are checked
+                throw new IllegalStateException(s"subfield resolver: expected ${entityJsons.size} json values, got ${subfieldJsons.size}")
+              } else {
+                subfieldJsons
+              }
+            }
         }
       )
     } yield {

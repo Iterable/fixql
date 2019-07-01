@@ -4,7 +4,7 @@ import cats.Monad
 import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
 import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
 import graphql.introspection.Introspection
-import graphql.schema.{GraphQLEnumType, GraphQLFieldDefinition, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLType}
+import graphql.schema.{GraphQLEnumType, GraphQLFieldDefinition, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLType}
 import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
@@ -39,7 +39,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     case ObjectField("__Type", "name") => QueryReducer.mapped(_("name"))
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(o => (o \ "description").asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__Type", "fields") => QueryReducer.mapped(_("fields"))
-    case ObjectField("__Type", _) => QueryReducer.jsValues[F] { _ => F.pure(Seq(JsNull)) }.toTopLevelArray
+    case ObjectField("__Type", _) => QueryReducer.jsValues[F] { parents => F.pure(Seq.fill(parents.size)(JsNull)) }
     case ObjectField("__Field", fieldName) => QueryReducer.mapped(_(fieldName))
     case ObjectField("__InputValue", fieldName) => QueryReducer.mapped(_(fieldName))
     case ObjectField("__EnumValue", fieldName) => QueryReducer.mapped(_(fieldName)) //o => (o \ fieldName).asOpt[JsValue].getOrElse(JsNull))
@@ -68,6 +68,12 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
           kind = "ENUM",
           name = Option(enum.getName),
           description = Option(enum.getDescription),
+        )
+      case intf: GraphQLInterfaceType =>
+        __Type(
+          kind = "INTERFACE",
+          name = Option(intf.getName),
+          description = Option(intf.getDescription),
         )
     }.toSeq
   }
