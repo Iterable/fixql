@@ -110,12 +110,14 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
           kind = "LIST",
           name = None,
           description = None,
+          ofType = Some(mkType(list.getWrappedType))
         )
       case non: GraphQLNonNull =>
         __Type(
           kind = "NONNULL",
           name = None,
           description = None,
+          ofType = Some(mkType(non.getWrappedType))
         )
     }
   }
