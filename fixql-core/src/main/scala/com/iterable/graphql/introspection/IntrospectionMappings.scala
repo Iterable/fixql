@@ -48,6 +48,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     case ObjectField("__Type", "kind") => QueryReducer.mapped(_("kind"))
     case ObjectField("__Type", "name") => QueryReducer.mapped(o => (o \ "name").asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(o => (o \ "description").asOpt[JsValue].getOrElse(JsNull))
+    case ObjectField("__Type", "ofType") => QueryReducer.mapped(o => (o \ "ofType").asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__Type", "fields") => QueryReducer.apply[F, Seq[JsObject]] { field =>
       ResolverFn(field.name) { parents =>
         F.pure(parents.map { parent =>
