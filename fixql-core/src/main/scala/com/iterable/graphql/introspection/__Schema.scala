@@ -16,7 +16,7 @@ case class __Type(
   kind: Enums.__TypeKind,
   name: Option[String],
   description: Option[String],
-  fields: Seq[__Field] = Nil,
+  //fields: Seq[__Field] = Nil, // recursive so we don't materialize it right away
   interfaces: Seq[__Type] = Nil,
   possibleTypes: Seq[__Type] = Nil,
   enumValues: Seq[__EnumValue] = Nil,
@@ -28,7 +28,7 @@ case class  __Field(
   name: String,
   description: Option[String],
   args: Seq[__InputValue] = Nil,
-  typeName: String, // TODO
+  `type`: __Type,
   isDeprecated: Boolean = false,
   deprecationReason: Option[String] = None,
 )

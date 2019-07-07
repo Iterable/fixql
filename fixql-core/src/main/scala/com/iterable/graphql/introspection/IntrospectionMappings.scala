@@ -2,9 +2,9 @@ package com.iterable.graphql.introspection
 
 import cats.Monad
 import com.iterable.graphql.compiler.FieldTypeInfo.{ObjectField, TopLevelField}
-import com.iterable.graphql.compiler.{QueryMappings, QueryReducer}
+import com.iterable.graphql.compiler.{QueryMappings, QueryReducer, ResolverFn}
 import graphql.introspection.Introspection
-import graphql.schema.{GraphQLEnumType, GraphQLFieldDefinition, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLType, GraphQLTypeUtil}
+import graphql.schema.{GraphQLEnumType, GraphQLFieldDefinition, GraphQLInterfaceType, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLType, GraphQLTypeUtil}
 import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
@@ -31,7 +31,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
         .mergeResolveSubfields
         .toTopLevelArray
     case ObjectField("__Schema", "queryType") => QueryReducer.jsObjects[F] { _ =>
-      F.pure(Seq(Json.toJson(mkType(graphqlSchema.getQueryType)).as[JsObject]))
+      F.pure(Seq(Json.toJson(mkObjectType(graphqlSchema.getQueryType)).as[JsObject]))
     }
         .mergeResolveSubfields
         .as[JsValue]
@@ -39,7 +39,22 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
     case ObjectField("__Type", "kind") => QueryReducer.mapped(_("kind"))
     case ObjectField("__Type", "name") => QueryReducer.mapped(_("name"))
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(o => (o \ "description").asOpt[JsValue].getOrElse(JsNull))
-    case ObjectField("__Type", "fields") => QueryReducer.mapped(_("fields"))
+    case ObjectField("__Type", "fields") => QueryReducer.apply[F, Seq[JsObject]] { field =>
+      ResolverFn(field.name) { parents =>
+        F.pure(parents.map { parent =>
+          parent("name").asOpt[String].flatMap { typeName =>
+            schema2.getType(typeName) match {
+              case obj: GraphQLObjectType =>
+                Some(mkFields(obj.getFieldDefinitions.asScala.toSeq)
+                  .map(Json.toJson(_).as[JsObject]))
+              case _ => None
+            }
+          }.getOrElse(Nil)
+        })
+      }
+    }
+        .mergeResolveSubfieldsMany
+        .as[JsValue]
     case ObjectField("__Type", fieldName) => QueryReducer.jsValues[F] { parents =>
       val field = schema2.getObjectType("__Type").getFieldDefinition(fieldName)
       val placeholder =
@@ -50,14 +65,15 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
         }
       F.pure(Seq.fill(parents.size)(placeholder))
     }
-    case ObjectField("__Field", fieldName) => QueryReducer.mapped(_(fieldName))
+    case ObjectField("__Field", "type") => QueryReducer.mapped(_("type"))
+    case ObjectField("__Field", fieldName) => QueryReducer.mapped(p => (p \ fieldName).asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__InputValue", fieldName) => QueryReducer.mapped(_(fieldName))
     case ObjectField("__EnumValue", fieldName) => QueryReducer.mapped(_(fieldName)) //o => (o \ fieldName).asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__Directive", fieldName) => QueryReducer.mapped(_(fieldName))
   }
 
   def schema = {
-    val queryType = mkType(graphqlSchema.getQueryType)
+    val queryType = mkObjectType(graphqlSchema.getQueryType)
     __Schema(
       allTypes,
       queryType,
@@ -65,8 +81,12 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
   }
 
   def allTypes: Seq[__Type] = {
-    graphqlSchema.getAllTypesAsList.asScala.map {
-      case obj: GraphQLObjectType => mkType(obj)
+    graphqlSchema.getAllTypesAsList.asScala.map(mkType).toSeq
+  }
+
+  def mkType(typ: GraphQLType): __Type = {
+    typ match {
+      case obj: GraphQLObjectType => mkObjectType(obj)
       case scalar: GraphQLScalarType =>
         __Type(
           kind = "SCALAR",
@@ -85,15 +105,26 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
           name = Option(intf.getName),
           description = Option(intf.getDescription),
         )
-    }.toSeq
+      case list: GraphQLList =>
+        __Type(
+          kind = "LIST",
+          name = None,
+          description = None,
+        )
+      case non: GraphQLNonNull =>
+        __Type(
+          kind = "NONNULL",
+          name = None,
+          description = None,
+        )
+    }
   }
 
-  def mkType(obj: GraphQLObjectType) = {
+  def mkObjectType(obj: GraphQLObjectType) = {
     __Type(
       kind = "OBJECT",
       name = Option(obj.getName),
       description = Option(obj.getDescription),
-      fields = mkFields(obj.getFieldDefinitions.asScala.toSeq),
     )
   }
 
@@ -103,7 +134,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
         name = field.getName,
         description = Option(field.getDescription),
         args = Nil,
-        typeName = "", // TODO
+        `type` = mkType(field.getType),
         isDeprecated = field.isDeprecated,
         deprecationReason = Option(field.getDeprecationReason),
       )
