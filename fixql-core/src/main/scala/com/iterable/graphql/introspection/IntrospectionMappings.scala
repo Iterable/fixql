@@ -37,7 +37,7 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
         .as[JsValue]
     case ObjectField("__Schema", _) => QueryReducer.jsValues[F] { _ => F.pure(Seq(JsNull)) }.toTopLevelArray
     case ObjectField("__Type", "kind") => QueryReducer.mapped(_("kind"))
-    case ObjectField("__Type", "name") => QueryReducer.mapped(_("name"))
+    case ObjectField("__Type", "name") => QueryReducer.mapped(o => (o \ "name").asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__Type", "description") =>  QueryReducer.mapped(o => (o \ "description").asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__Type", "fields") => QueryReducer.apply[F, Seq[JsObject]] { field =>
       ResolverFn(field.name) { parents =>
@@ -65,7 +65,13 @@ class IntrospectionMappings(graphqlSchema: GraphQLSchema) {
         }
       F.pure(Seq.fill(parents.size)(placeholder))
     }
-    case ObjectField("__Field", "type") => QueryReducer.mapped(_("type"))
+    case ObjectField("__Field", "type") => QueryReducer.jsObjects { parents =>
+      F.pure(parents.map { parent =>
+        parent("type").as[JsObject]
+      })
+    }
+        .mergeResolveSubfields
+        .as[JsValue]
     case ObjectField("__Field", fieldName) => QueryReducer.mapped(p => (p \ fieldName).asOpt[JsValue].getOrElse(JsNull))
     case ObjectField("__InputValue", fieldName) => QueryReducer.mapped(_(fieldName))
     case ObjectField("__EnumValue", fieldName) => QueryReducer.mapped(_(fieldName)) //o => (o \ fieldName).asOpt[JsValue].getOrElse(JsNull))
