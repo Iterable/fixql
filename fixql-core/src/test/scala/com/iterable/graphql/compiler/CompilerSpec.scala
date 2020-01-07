@@ -31,8 +31,8 @@ class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with Reduc
         Seq(
           Field("humans",
             subfields = Seq(
-              Field("id"),
-              Field("name"),
+              Field("id").fix,
+              Field("name").fix,
             )
           ).fix
         )

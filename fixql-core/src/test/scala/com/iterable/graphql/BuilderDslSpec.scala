@@ -81,8 +81,8 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
         Seq(
           Field("humans",
             subfields = Seq(
-              Field("id"),
-              Field("name"),
+              Field("id").fix,
+              Field("name").fix,
               // TODO: add homePlanet
             )
           ).fix
