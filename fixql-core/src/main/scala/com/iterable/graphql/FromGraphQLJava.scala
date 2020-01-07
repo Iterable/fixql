@@ -97,7 +97,7 @@ object FromGraphQLJava {
       override def onNumber(value: JsonNumber) = value.toBigDecimal
       override def onString(value: String) = value
       override def onArray(value: Vector[Json]) = value.map(toJavaValues)
-      override def onObject(value: JsonObject) = value.toMap.mapValues(toJavaValues)
+      override def onObject(value: JsonObject) = value.toMap.view.mapValues(toJavaValues).toMap
     })
   }
 
