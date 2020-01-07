@@ -75,14 +75,14 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
   "builder dsl" should "build mappings that execute correctly" in {
     val (schema, mappings) = buildSchemaAndMappings
 
-    import qq.droste.syntax.fix._
+    import higherkindness.droste.syntax.fix._
     val query: Query[Field.Fixed] =
       Query(
         Seq(
           Field("humans",
             subfields = Seq(
-              Field("id"),
-              Field("name"),
+              Field("id").fix,
+              Field("name").fix,
               // TODO: add homePlanet
             )
           ).fix
