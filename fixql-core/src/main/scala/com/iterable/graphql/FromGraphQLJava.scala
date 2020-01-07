@@ -101,11 +101,11 @@ object FromGraphQLJava {
     })
   }
 
-  import qq.droste.syntax.fix._
+  import higherkindness.droste.syntax.fix._
   private def mkField(fieldName: String, arguments: java.util.Map[String, AnyRef], fss: DataFetchingFieldSelectionSet): Field.Fixed = {
     // getFields contains flattened fields from all children, but we only want the immediate children
     val childFields = fss.getFields.asScala.filterNot(_.getQualifiedName.contains("/"))
-    val args = JsObject(arguments.asScala.mapValues(fromJavaValue))
+    val args = JsObject(arguments.asScala.view.mapValues(fromJavaValue).toMap)
     Field[Field.Fixed](
       fieldName,
       args,

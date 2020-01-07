@@ -1,7 +1,8 @@
 import Dependencies._
 
 inThisBuild(List(
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.1",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.10"),
   organization := "com.iterable",
   organizationName := "Iterable",
   homepage := Some(url("https://github.com/Iterable/fixql")),
@@ -27,15 +28,15 @@ lazy val core = Project("fixql-core", file("fixql-core"))
   .settings(name := "fixql-core")
   .settings(libraryDependencies ++= Seq(
     scalaTest % Test,
-    "io.higherkindness" %% "droste-core" % "0.6.0",
+    "io.higherkindness" %% "droste-core" % "0.8.0",
     "com.graphql-java" % "graphql-java" % "12.0",
     "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0",
 
-    "io.circe" %% "circe-core" % "0.9.3",
-    "io.circe" %% "circe-parser" % "0.9.3",
-    "io.circe" %% "circe-optics" % "0.9.3",
+    "io.circe" %% "circe-core" % "0.12.3",
+    "io.circe" %% "circe-parser" % "0.12.3",
+    "io.circe" %% "circe-optics" % "0.12.0",
 
-    "com.typesafe.play" %% "play-json" % "2.7.1",
+    "com.typesafe.play" %% "play-json" % "2.7.4",
   ))
   .settings(addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0"))
 
