@@ -97,7 +97,7 @@ object FromGraphQLJava {
       override def onNumber(value: JsonNumber) = value.toBigDecimal
       override def onString(value: String) = value
       override def onArray(value: Vector[Json]) = value.map(toJavaValues)
-      override def onObject(value: JsonObject) = value.toMap.view.mapValues(toJavaValues).toMap
+      override def onObject(value: JsonObject) = value.toMap.mapValues(toJavaValues).toMap
     })
   }
 
@@ -105,7 +105,7 @@ object FromGraphQLJava {
   private def mkField(fieldName: String, arguments: java.util.Map[String, AnyRef], fss: DataFetchingFieldSelectionSet): Field.Fixed = {
     // getFields contains flattened fields from all children, but we only want the immediate children
     val childFields = fss.getFields.asScala.filterNot(_.getQualifiedName.contains("/"))
-    val args = JsObject(arguments.asScala.view.mapValues(fromJavaValue).toMap)
+    val args = JsObject(arguments.asScala.mapValues(fromJavaValue).toMap)
     Field[Field.Fixed](
       fieldName,
       args,
