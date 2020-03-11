@@ -2,6 +2,7 @@ package com.iterable.graphql
 
 import cats.Id
 import com.iterable.graphql.compiler.{Compiler, QueryMappings, QueryReducer, ReducerHelpers}
+import com.iterable.graphql.introspection.IntrospectionMappings
 import graphql.Scalars._
 import graphql.schema.idl.SchemaPrinter
 import graphql.schema.{GraphQLObjectType, GraphQLSchema, GraphQLType}
@@ -90,6 +91,31 @@ class BuilderDslSpec extends FlatSpec with SchemaAndMappingsMutableBuilderDsl wi
       )
 
     val queryResults = Compiler.compile(FromGraphQLJava.toSchemaFunction(schema), query, mappings)
+    val arr = (queryResults \ "humans").as[JsArray]
+    arr.value.size shouldEqual repo.getHumans(1000, 0).size
+    arr.value.head shouldEqual Json.obj(
+      "id" -> "1000",
+      "name" -> "Luke Skywalker",
+    )
+  }
+
+  "builder dsl" should "introspection" in {
+    val (schema, mappings) = buildSchemaAndMappings
+    val (schema2, mappings2) = new IntrospectionMappings(schema).newSchemaAndMappings(mappings)
+
+    import qq.droste.syntax.fix._
+    val query: Query[Field.Fixed] =
+      Query(
+        Seq(
+          Field("__schema",
+            subfields =
+              Seq(Field("types",
+                subfields = Seq(Field("name"))))
+          ).fix
+        )
+      )
+
+    val queryResults = Compiler.compile(FromGraphQLJava.toSchemaFunction(schema2), query, mappings2)
     val arr = (queryResults \ "humans").as[JsArray]
     arr.value.size shouldEqual repo.getHumans(1000, 0).size
     arr.value.head shouldEqual Json.obj(
