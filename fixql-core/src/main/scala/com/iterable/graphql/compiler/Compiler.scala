@@ -6,8 +6,8 @@ import com.iterable.graphql.Query
 import play.api.libs.json.JsObject
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
-import qq.droste.data.Attr
-import qq.droste.data.Fix
+import higherkindness.droste.data.Attr
+import higherkindness.droste.data.Fix
 import cats.implicits._
 
 object Compiler {

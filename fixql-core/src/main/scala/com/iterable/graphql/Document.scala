@@ -3,8 +3,8 @@ package com.iterable.graphql
 import cats.Functor
 import play.api.libs.json.JsObject
 import play.api.libs.json.Json
-import qq.droste.data.Attr
-import qq.droste.data.Fix
+import higherkindness.droste.data.Attr
+import higherkindness.droste.data.Fix
 
 /** Simplified AST for "reduced" documents: variables have been interpolated,
   * and fragments have been inlined

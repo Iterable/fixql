@@ -1,6 +1,7 @@
 language: scala
 scala:
-  - 2.12.8
+  - 2.12.10
+  - 2.13.1
 
 # sbt-ci-release: https://github.com/olafurpg/sbt-ci-release
 before_install:

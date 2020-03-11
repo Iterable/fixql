@@ -25,14 +25,14 @@ class CompilerSpec extends FlatSpec with Matchers with StarWarsSchema with Reduc
       case ObjectField("Human", "name") => QueryReducer.mapped(_("name"))
     }: QueryMappings[Id]).orElse(rootMapping)
 
-    import qq.droste.syntax.fix._
+    import higherkindness.droste.syntax.fix._
     val query: Query[Field.Fixed] =
       Query(
         Seq(
           Field("humans",
             subfields = Seq(
-              Field("id"),
-              Field("name"),
+              Field("id").fix,
+              Field("name").fix,
             )
           ).fix
         )
